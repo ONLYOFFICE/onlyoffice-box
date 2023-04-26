@@ -28,6 +28,7 @@ func (c BoxCredentials) ToJSON() []byte {
 type BoxFile struct {
 	ID            string     `json:"id"`
 	Name          string     `json:"name"`
+	Description   string     `json:"description"`
 	Extension     string     `json:"extension"`
 	ModifiedAt    string     `json:"modified_at"`
 	FileVersion   BoxVersion `json:"file_version"`

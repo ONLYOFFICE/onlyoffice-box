@@ -25,6 +25,7 @@ type BoxAPI interface {
 	GetFileInfo(ctx context.Context, token, fileId string) (response.BoxFile, error)
 	GetFilePublicUrl(ctx context.Context, token, fileID string) (string, error)
 	UploadFile(ctx context.Context, filename, token, parentID string, file io.ReadCloser) error
+	UpdateModifiedAt(ctx context.Context, token, fileID string) error
 }
 
 type boxAPIClient struct {
@@ -38,8 +39,8 @@ func NewBoxAPIClient() BoxAPI {
 		MaxIdleConns:          100,
 		IdleConnTimeout:       90 * time.Second,
 		TLSHandshakeTimeout:   15 * time.Second,
-		ResponseHeaderTimeout: 5 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
+		ResponseHeaderTimeout: 8 * time.Second,
+		ExpectContinueTimeout: 4 * time.Second,
 	})
 	return boxAPIClient{
 		client: resty.NewWithClient(otelClient).
@@ -47,7 +48,7 @@ func NewBoxAPIClient() BoxAPI {
 				return http.ErrUseLastResponse
 			})).
 			SetRetryCount(3).
-			SetTimeout(3 * time.Second).
+			SetTimeout(10 * time.Second).
 			SetRetryWaitTime(120 * time.Millisecond).
 			SetRetryMaxWaitTime(900 * time.Millisecond).
 			SetLogger(log.NewEmptyLogger()).
@@ -107,7 +108,7 @@ func (c boxAPIClient) GetFileInfo(ctx context.Context, token, fileID string) (re
 		SetAuthToken(token).
 		SetResult(&file).
 		SetQueryParams(map[string]string{
-			"fields": "id,name,extension,modified_at,file_version,version_number",
+			"fields": "id,name,description,extension,modified_at,file_version,version_number",
 		}).
 		SetPathParams(map[string]string{
 			"fileID": fileID,
@@ -152,6 +153,26 @@ func (c boxAPIClient) UploadFile(ctx context.Context, filename, token, fileID st
 
 	if resp.StatusCode() != http.StatusCreated {
 		return _ErrCouldNotUploadFile
+	}
+
+	return nil
+}
+
+func (c boxAPIClient) UpdateModifiedAt(ctx context.Context, token, fileID string) error {
+	info, _ := c.GetFileInfo(ctx, token, fileID)
+
+	_, err := c.client.R().
+		SetAuthToken(token).
+		SetPathParams(map[string]string{
+			"fileID": fileID,
+		}).
+		SetBody(map[string]string{
+			"description": info.Description,
+		}).
+		Put("https://api.box.com/2.0/files/{fileID}")
+
+	if err != nil {
+		return err
 	}
 
 	return nil
