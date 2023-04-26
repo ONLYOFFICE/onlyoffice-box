@@ -43,7 +43,6 @@ type EnqueuerOption func(*EnqueuerOptions)
 
 type EnqueuerOptions struct {
 	TaskID   string
-	Queue    string
 	MaxRetry int
 	Timeout  time.Duration
 }
@@ -51,7 +50,6 @@ type EnqueuerOptions struct {
 func NewEnqueuerOptions(opts ...EnqueuerOption) EnqueuerOptions {
 	opt := EnqueuerOptions{
 		MaxRetry: 3,
-		Queue:    "default",
 		Timeout:  0 * time.Second,
 		TaskID:   uuid.NewString(),
 	}
@@ -67,14 +65,6 @@ func WithTaskID(val string) EnqueuerOption {
 	return func(eo *EnqueuerOptions) {
 		if val != "" {
 			eo.TaskID = val
-		}
-	}
-}
-
-func WithQueue(val string) EnqueuerOption {
-	return func(eo *EnqueuerOptions) {
-		if val != "" {
-			eo.Queue = val
 		}
 	}
 }
