@@ -150,7 +150,7 @@ func (c CallbackController) BuildPostHandleCallback(enqueuer worker.BackgroundEn
 					FileID:      fileID,
 					Filename:    name,
 					DownloadURL: body.URL,
-				}.ToJSON(), worker.WithMaxRetry(6), worker.WithTaskID(body.Key)); err != nil {
+				}.ToJSON(), worker.WithMaxRetry(5), worker.WithTaskID(body.Key)); err != nil {
 					rw.WriteHeader(http.StatusInternalServerError)
 					c.logger.Errorf("could not enqueue a new job with key %s", body.Key)
 					rw.Write(response.CallbackResponse{

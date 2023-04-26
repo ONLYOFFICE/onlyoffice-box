@@ -72,7 +72,7 @@ func (s CallbackService) NewHandler() interface {
 
 // InitializeServer sets all injected dependencies.
 func (s *CallbackService) InitializeServer() *chi.Mux {
-	s.worker.Register("box-callback-upload", s.cbworker.UploadFile)
+	s.worker.Register("box-callback-upload", s.cbworker.UploadFile, s.cbworker.Cleanup)
 	s.InitializeRoutes()
 	s.worker.Run()
 	return s.mux

@@ -69,6 +69,7 @@ func NewCallbackWorker(
 		logger:      logger,
 	}
 }
+
 func (c CallbackWorker) UploadFile(ctx context.Context, payload []byte) error {
 	ctx, cancel := context.WithTimeout(
 		context.Background(), time.Duration(c.onlyoffice.Onlyoffice.Callback.UploadTimeout)*time.Second,
@@ -155,4 +156,32 @@ func (c CallbackWorker) UploadFile(ctx context.Context, payload []byte) error {
 	c.logger.Debugf("worker has finished file upload job")
 
 	return nil
+}
+
+func (c CallbackWorker) Cleanup(taskID string, payload []byte) {
+	tracer := otel.GetTracerProvider().Tracer("box-onlyoffice/pool")
+	tctx, span := tracer.Start(context.Background(), "cleanup "+taskID)
+	defer span.End()
+
+	var msg request.JobMessage
+	if err := json.Unmarshal(payload, &msg); err != nil {
+		logger.Errorf("could not parse job message. Reason: %s", err.Error())
+		return
+	}
+
+	req := c.client.NewRequest(
+		fmt.Sprintf("%s:auth", c.server.Namespace), "UserSelectHandler.GetUser", msg.UserID,
+	)
+
+	var ures response.UserResponse
+	if err := c.client.Call(tctx, req, &ures, client.WithRetries(3), client.WithBackoff(func(ctx context.Context, req client.Request, attempts int) (time.Duration, error) {
+		return backoff.Do(attempts), nil
+	})); err != nil {
+		c.logger.Errorf("could not get user credentials: %s", err.Error())
+		return
+	}
+
+	if err := c.boxAPI.UpdateModifiedAt(tctx, ures.AccessToken, msg.FileID); err != nil {
+		c.logger.Errorf("could not update file %s: %s", msg.FileID, err.Error())
+	}
 }
