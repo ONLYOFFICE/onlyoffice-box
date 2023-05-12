@@ -16,19 +16,32 @@
  *
  */
 
-package client
+package functional
 
-import (
-	"github.com/ONLYOFFICE/onlyoffice-box/pkg/messaging"
-	"go-micro.dev/v4/client"
-	"go-micro.dev/v4/registry"
-)
+type action[T any] func(input T) (T, error)
 
-func NewClient(
-	registry registry.Registry, broker messaging.BrokerWithOptions,
-) client.Client {
-	return client.NewClient(
-		client.Registry(registry),
-		client.Broker(broker.Broker),
-	)
+type Pipe[T any] struct {
+	chain []action[T]
+}
+
+func NewPipe[T any]() *Pipe[T] {
+	return &Pipe[T]{}
+}
+
+func (p *Pipe[T]) Next(f action[T]) *Pipe[T] {
+	p.chain = append(p.chain, f)
+	return p
+}
+
+func (p *Pipe[T]) Do() (T, error) {
+	var res T
+	var err error
+	for _, fn := range p.chain {
+		res, err = fn(res)
+		if err != nil {
+			break
+		}
+	}
+
+	return res, err
 }

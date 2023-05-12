@@ -16,19 +16,25 @@
  *
  */
 
-package client
+package events
 
-import (
-	"github.com/ONLYOFFICE/onlyoffice-box/pkg/messaging"
-	"go-micro.dev/v4/client"
-	"go-micro.dev/v4/registry"
-)
+type Event interface {
+	Name() string
+	Get(key string) any
+	Add(key string, val any)
+	Abort(bool)
+	IsAborted() bool
+}
 
-func NewClient(
-	registry registry.Registry, broker messaging.BrokerWithOptions,
-) client.Client {
-	return client.NewClient(
-		client.Registry(registry),
-		client.Broker(broker.Broker),
-	)
+type Listener interface {
+	Handle(e Event) error
+}
+
+type Emitter interface {
+	On(name string, listener Listener)
+	Fire(name string, payload map[string]any)
+}
+
+func NewEmitter() Emitter {
+	return NewGoKitEmitter()
 }

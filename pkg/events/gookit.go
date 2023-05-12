@@ -16,19 +16,24 @@
  *
  */
 
-package client
+package events
 
 import (
-	"github.com/ONLYOFFICE/onlyoffice-box/pkg/messaging"
-	"go-micro.dev/v4/client"
-	"go-micro.dev/v4/registry"
+	"github.com/gookit/event"
 )
 
-func NewClient(
-	registry registry.Registry, broker messaging.BrokerWithOptions,
-) client.Client {
-	return client.NewClient(
-		client.Registry(registry),
-		client.Broker(broker.Broker),
-	)
+type gooKitEmitter struct{}
+
+func NewGoKitEmitter() Emitter {
+	return &gooKitEmitter{}
+}
+
+func (g gooKitEmitter) On(name string, listener Listener) {
+	event.On(name, event.ListenerFunc(func(e event.Event) error {
+		return listener.Handle(e)
+	}))
+}
+
+func (g gooKitEmitter) Fire(name string, payload map[string]any) {
+	event.Fire(name, payload)
 }

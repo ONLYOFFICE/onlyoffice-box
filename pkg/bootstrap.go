@@ -27,6 +27,7 @@ import (
 	"github.com/ONLYOFFICE/onlyoffice-box/pkg/client"
 	"github.com/ONLYOFFICE/onlyoffice-box/pkg/config"
 	"github.com/ONLYOFFICE/onlyoffice-box/pkg/crypto"
+	"github.com/ONLYOFFICE/onlyoffice-box/pkg/events"
 	"github.com/ONLYOFFICE/onlyoffice-box/pkg/log"
 	"github.com/ONLYOFFICE/onlyoffice-box/pkg/messaging"
 	"github.com/ONLYOFFICE/onlyoffice-box/pkg/onlyoffice"
@@ -40,8 +41,51 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func Bootstrap(path string, extras ...interface{}) *fx.App {
-	builder := config.BuildNewServerConfig(path)
+type option func(*options)
+
+type options struct {
+	invokables []interface{}
+	modules    []interface{}
+}
+
+func newOptions(opts ...option) options {
+	opt := options{}
+	for _, o := range opts {
+		o(&opt)
+	}
+
+	return opt
+}
+
+func WithInvokables(val ...interface{}) option {
+	return func(o *options) {
+		o.invokables = val
+	}
+}
+
+func WithModules(val ...interface{}) option {
+	return func(o *options) {
+		o.modules = val
+	}
+}
+
+type bootstrapper struct {
+	path       string
+	invokables []interface{}
+	modules    []interface{}
+}
+
+func NewBootstrapper(path string, opts ...option) bootstrapper {
+	options := newOptions(opts...)
+	return bootstrapper{
+		path:       path,
+		invokables: options.invokables,
+		modules:    options.modules,
+	}
+}
+
+func (b bootstrapper) Bootstrap() *fx.App {
+	builder := config.BuildNewServerConfig(b.path)
 	sconf, err := builder()
 	if err != nil {
 		log := log.NewDefaultLogger(&config.LoggerConfig{})
@@ -57,17 +101,17 @@ func Bootstrap(path string, extras ...interface{}) *fx.App {
 	}
 
 	return fx.New(
-		fx.Provide(config.BuildNewCacheConfig(path)),
-		fx.Provide(config.BuildNewCorsConfig(path)),
-		fx.Provide(config.BuildNewLoggerConfig(path)),
-		fx.Provide(config.BuildNewMessagingConfig(path)),
-		fx.Provide(config.BuildNewPersistenceConfig(path)),
-		fx.Provide(config.BuildNewRegistryConfig(path)),
-		fx.Provide(config.BuildNewResilienceConfig(path)),
+		fx.Provide(config.BuildNewCacheConfig(b.path)),
+		fx.Provide(config.BuildNewCorsConfig(b.path)),
+		fx.Provide(config.BuildNewLoggerConfig(b.path)),
+		fx.Provide(config.BuildNewMessagingConfig(b.path)),
+		fx.Provide(config.BuildNewPersistenceConfig(b.path)),
+		fx.Provide(config.BuildNewRegistryConfig(b.path)),
+		fx.Provide(config.BuildNewResilienceConfig(b.path)),
 		fx.Provide(builder),
-		fx.Provide(config.BuildNewTracerConfig(path)),
-		fx.Provide(config.BuildNewWorkerConfig(path)),
-		fx.Provide(config.BuildNewCryptoConfig(path)),
+		fx.Provide(config.BuildNewTracerConfig(b.path)),
+		fx.Provide(config.BuildNewWorkerConfig(b.path)),
+		fx.Provide(config.BuildNewCryptoConfig(b.path)),
 		fx.Provide(cache.NewCache),
 		fx.Provide(log.NewLogrusLogger),
 		fx.Provide(registry.NewRegistry),
@@ -76,13 +120,14 @@ func Bootstrap(path string, extras ...interface{}) *fx.App {
 		fx.Provide(trace.NewTracer),
 		fx.Provide(worker.NewBackgroundWorker),
 		fx.Provide(worker.NewBackgroundEnqueuer),
+		fx.Provide(events.NewEmitter),
 		fx.Provide(repl.NewService),
 		fx.Provide(crypto.NewEncryptor),
 		fx.Provide(crypto.NewJwtManager),
 		fx.Provide(crypto.NewHasher),
-		fx.Provide(crypto.NewStateGenerator),
 		fx.Provide(onlyoffice.NewOnlyofficeFileUtility),
-		fx.Provide(extras...),
+		fx.Provide(b.modules...),
+		fx.Invoke(b.invokables...),
 		fx.Invoke(func(lifecycle fx.Lifecycle, service micro.Service, repl *http.Server, logger log.Logger) {
 			lifecycle.Append(fx.Hook{
 				OnStart: func(ctx context.Context) error {
