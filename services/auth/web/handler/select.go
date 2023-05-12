@@ -65,7 +65,7 @@ func (u UserSelectHandler) GetUser(ctx context.Context, uid *string, res *domain
 			return nil, err
 		}
 
-		if user.ExpiresAt-2500 <= time.Now().UnixMilli() {
+		if user.ExpiresAt-12000 <= time.Now().UnixMilli() {
 			credentials, err := u.boxClient.
 				RefreshAuthCredentials(ctx, user.RefreshToken, u.credentials.ClientID, u.credentials.ClientSecret)
 			if err != nil {

@@ -61,7 +61,7 @@ func NewMongoUserAdapter(url string) port.UserAccessServiceAdapter {
 }
 
 func (m *mongoUserAdapter) save(ctx context.Context, user domain.UserAccess) error {
-	return mgm.Transaction(func(session mongo.Session, sc mongo.SessionContext) error {
+	return mgm.TransactionWithCtx(ctx, func(session mongo.Session, sc mongo.SessionContext) error {
 		u := &userAccessCollection{}
 		collection := mgm.Coll(&userAccessCollection{})
 
@@ -128,12 +128,17 @@ func (m *mongoUserAdapter) UpsertUser(ctx context.Context, user domain.UserAcces
 }
 
 func (m *mongoUserAdapter) DeleteUserByID(ctx context.Context, uid string) error {
-	uid = strings.TrimSpace(uid)
+	return mgm.TransactionWithCtx(ctx, func(session mongo.Session, sc mongo.SessionContext) error {
+		uid = strings.TrimSpace(uid)
 
-	if uid == "" {
-		return _ErrInvalidUserId
-	}
+		if uid == "" {
+			return _ErrInvalidUserId
+		}
 
-	_, err := mgm.Coll(&userAccessCollection{}).DeleteMany(ctx, bson.M{"uid": bson.M{operator.Eq: uid}})
-	return err
+		if _, err := mgm.Coll(&userAccessCollection{}).DeleteMany(ctx, bson.M{"uid": bson.M{operator.Eq: uid}}); err != nil {
+			return err
+		}
+
+		return session.CommitTransaction(sc)
+	})
 }
