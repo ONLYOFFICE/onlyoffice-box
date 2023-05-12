@@ -23,7 +23,6 @@ import (
 	chttp "github.com/ONLYOFFICE/onlyoffice-box/pkg/service/http"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/callback/web"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/callback/web/controller"
-	"github.com/ONLYOFFICE/onlyoffice-box/services/callback/web/worker"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared"
 	"github.com/urfave/cli/v2"
 )
@@ -57,7 +56,7 @@ func Server() *cli.Command {
 					shared.BuildNewOnlyofficeConfig(CONFIG_PATH),
 					shared.BuildNewIntegrationCredentialsConfig(CONFIG_PATH),
 					controller.NewCallbackController,
-					worker.NewCallbackWorker, shared.NewBoxAPIClient,
+					shared.NewBoxAPIClient,
 				)).Bootstrap()
 
 			if err := app.Err(); err != nil {
