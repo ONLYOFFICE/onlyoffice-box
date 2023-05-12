@@ -51,13 +51,14 @@ func Server() *cli.Command {
 				// ENVIRONMENT = c.String("environment")
 			)
 
-			app := pkg.Bootstrap(
-				CONFIG_PATH, chttp.NewService, web.NewServer,
-				shared.BuildNewOnlyofficeConfig(CONFIG_PATH),
-				shared.BuildNewIntegrationCredentialsConfig(CONFIG_PATH),
-				controller.NewCallbackController,
-				worker.NewCallbackWorker, shared.NewBoxAPIClient,
-			)
+			app := pkg.NewBootstrapper(
+				CONFIG_PATH, pkg.WithModules(
+					chttp.NewService, web.NewServer,
+					shared.BuildNewOnlyofficeConfig(CONFIG_PATH),
+					shared.BuildNewIntegrationCredentialsConfig(CONFIG_PATH),
+					controller.NewCallbackController,
+					worker.NewCallbackWorker, shared.NewBoxAPIClient,
+				)).Bootstrap()
 
 			if err := app.Err(); err != nil {
 				return err

@@ -20,6 +20,7 @@ package cmd
 
 import (
 	"github.com/ONLYOFFICE/onlyoffice-box/pkg"
+	"github.com/ONLYOFFICE/onlyoffice-box/pkg/crypto"
 	chttp "github.com/ONLYOFFICE/onlyoffice-box/pkg/service/http"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/gateway/web"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/gateway/web/controller"
@@ -50,12 +51,13 @@ func Server() *cli.Command {
 				// ENVIRONMENT = c.String("environment")
 			)
 
-			app := pkg.Bootstrap(
-				CONFIG_PATH,
-				controller.NewAuthController, controller.NewEditorController,
-				chttp.NewService, web.NewServer, shared.BuildNewIntegrationCredentialsConfig(CONFIG_PATH),
-				shared.NewBoxAPIClient, shared.BuildNewOnlyofficeConfig(CONFIG_PATH),
-			)
+			app := pkg.NewBootstrapper(
+				CONFIG_PATH, pkg.WithModules(
+					controller.NewAuthController, controller.NewEditorController,
+					chttp.NewService, web.NewServer, shared.BuildNewIntegrationCredentialsConfig(CONFIG_PATH),
+					shared.NewBoxAPIClient, shared.BuildNewOnlyofficeConfig(CONFIG_PATH), crypto.NewStateGenerator,
+				),
+			).Bootstrap()
 
 			if err := app.Err(); err != nil {
 				return err

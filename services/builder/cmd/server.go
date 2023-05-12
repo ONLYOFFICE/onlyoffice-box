@@ -50,12 +50,14 @@ func Server() *cli.Command {
 				// ENVIRONMENT = c.String("environment")
 			)
 
-			app := pkg.Bootstrap(
-				CONFIG_PATH, shared.BuildNewOnlyofficeConfig(CONFIG_PATH),
-				shared.BuildNewIntegrationCredentialsConfig(CONFIG_PATH),
-				handler.NewConfigHandler, rpc.NewService, web.NewConfigRPCServer,
-				shared.NewBoxAPIClient,
-			)
+			app := pkg.NewBootstrapper(
+				CONFIG_PATH, pkg.WithModules(
+					shared.BuildNewOnlyofficeConfig(CONFIG_PATH),
+					shared.BuildNewIntegrationCredentialsConfig(CONFIG_PATH),
+					handler.NewConfigHandler, rpc.NewService, web.NewConfigRPCServer,
+					shared.NewBoxAPIClient,
+				),
+			).Bootstrap()
 
 			if err := app.Err(); err != nil {
 				return err
