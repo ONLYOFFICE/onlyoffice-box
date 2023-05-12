@@ -3,26 +3,17 @@ package controller
 import (
 	"context"
 	"fmt"
-	"html/template"
 	"net/http"
-	"path"
-	"path/filepath"
-	"runtime"
 	"time"
 
 	"github.com/ONLYOFFICE/onlyoffice-box/pkg/config"
 	"github.com/ONLYOFFICE/onlyoffice-box/pkg/crypto"
 	"github.com/ONLYOFFICE/onlyoffice-box/pkg/log"
+	"github.com/ONLYOFFICE/onlyoffice-box/services/gateway/web/embeddable"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared/request"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared/response"
 	"github.com/gorilla/sessions"
 	"go-micro.dev/v4/client"
-)
-
-var (
-	_, b, _, _ = runtime.Caller(0)
-	basepath   = filepath.Dir(b)
-	editorPage = template.Must(template.ParseFiles(path.Join(basepath, "../", "templates", "editor.html")))
 )
 
 type EditorController struct {
@@ -49,12 +40,16 @@ func NewEditorController(
 
 func (c EditorController) BuildGetEditor() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
+		rw.Header().Set("Content-Type", "text/html")
 		query := r.URL.Query()
 		fileID, userID := query.Get("file"), query.Get("user")
 
 		if fileID == "" || userID == "" {
-			// TODO: Render error page
-			rw.WriteHeader(http.StatusBadRequest)
+			embeddable.ErrorPage.ExecuteTemplate(rw, "error", map[string]interface{}{
+				"errorMain":    "Something went wrong",
+				"errorSubtext": "Please reload the page",
+				"reloadButton": "Reload",
+			})
 			return
 		}
 
@@ -72,11 +67,11 @@ func (c EditorController) BuildGetEditor() http.HandlerFunc {
 			return
 		}
 
-		rw.Header().Set("Content-Security-Policy", "default-src * 'unsafe-inline' 'unsafe-eval'; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src * 'unsafe-inline'; img-src * data: blob: 'unsafe-inline'; frame-src *; style-src * 'unsafe-inline'; script-src-elem * 'unsafe-inline'")
-		editorPage.Execute(rw, map[string]interface{}{
-			"apijs":   fmt.Sprintf("%s/web-apps/apps/api/documents/api.js", config.ServerURL),
-			"config":  string(config.ToJSON()),
-			"docType": config.DocumentType,
+		embeddable.EditorPage.Execute(rw, map[string]interface{}{
+			"apijs":        fmt.Sprintf("%s/web-apps/apps/api/documents/api.js", config.ServerURL),
+			"config":       string(config.ToJSON()),
+			"docType":      config.DocumentType,
+			"cancelButton": "Cancel",
 		})
 	}
 }
