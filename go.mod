@@ -130,6 +130,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/uuid v1.3.0
 	github.com/gookit/event v1.0.6
+	github.com/gorilla/csrf v1.7.1
 	github.com/gorilla/sessions v1.2.1
 	github.com/hellofresh/health-go/v5 v5.1.1
 	github.com/hibiken/asynq v0.24.0

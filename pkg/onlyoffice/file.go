@@ -115,6 +115,7 @@ type OnlyofficeFileUtility interface {
 	IsExtensionViewOnly(fileExt string) bool
 	IsExtensionLossEditable(fileExt string) bool
 	IsExtensionOOXMLConvertable(fileExt string) bool
+	GetFilenameWithoutExtension(filename string) string
 	GetFileType(fileExt string) (string, error)
 	GetFileExt(filename string) string
 }
@@ -184,6 +185,10 @@ func (u fileUtility) IsExtensionLossEditable(fileExt string) bool {
 func (u fileUtility) IsExtensionOOXMLConvertable(fileExt string) bool {
 	_, exists := OnlyofficeOOXMLEditableExtensions[strings.ToLower(fileExt)]
 	return exists
+}
+
+func (u fileUtility) GetFilenameWithoutExtension(filename string) string {
+	return strings.TrimSuffix(filename, filepath.Ext(filename))
 }
 
 func (u fileUtility) GetFileType(fileExt string) (string, error) {

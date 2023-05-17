@@ -27,6 +27,7 @@ import (
 	"github.com/ONLYOFFICE/onlyoffice-box/pkg/config"
 	"github.com/ONLYOFFICE/onlyoffice-box/pkg/crypto"
 	"github.com/ONLYOFFICE/onlyoffice-box/pkg/log"
+	"github.com/ONLYOFFICE/onlyoffice-box/services/gateway/web/embeddable"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared/request"
 	"github.com/gorilla/sessions"
@@ -41,7 +42,6 @@ var group singleflight.Group
 type AuthController struct {
 	client         client.Client
 	boxClient      shared.BoxAPI
-	jwtManager     crypto.JwtManager
 	stateGenerator crypto.StateGenerator
 	store          *sessions.CookieStore
 	config         *config.ServerConfig
@@ -52,7 +52,6 @@ type AuthController struct {
 func NewAuthController(
 	client client.Client,
 	boxClient shared.BoxAPI,
-	jwtManager crypto.JwtManager,
 	stateGenerator crypto.StateGenerator,
 	config *config.ServerConfig,
 	oauth *oauth2.Config,
@@ -61,7 +60,6 @@ func NewAuthController(
 	return AuthController{
 		client:         client,
 		boxClient:      boxClient,
-		jwtManager:     jwtManager,
 		stateGenerator: stateGenerator,
 		store:          sessions.NewCookieStore([]byte(oauth.ClientSecret)),
 		config:         config,
@@ -97,6 +95,8 @@ func (c AuthController) BuildGetAuth() http.HandlerFunc {
 			return
 		}
 
+		c.logger.Debug("redirecting to auth page")
+
 		http.Redirect(
 			rw, r,
 			fmt.Sprintf(
@@ -114,25 +114,48 @@ func (c AuthController) BuildGetRedirect() http.HandlerFunc {
 		code, state := query.Get("code"), query.Get("state")
 		if code == "" {
 			c.logger.Warn("could not request auth credentials. Invalid authorization code")
-			// TODO: Error page
-			rw.WriteHeader(http.StatusForbidden)
+			embeddable.ErrorPage.Execute(rw, map[string]interface{}{
+				"errorMain":    "Something went wrong",
+				"errorSubtext": "Please reload the page",
+				"reloadButton": "Reload",
+			})
 			return
 		}
 
+		c.logger.Debugf("auth code is valid: %s", code)
+
 		if state == "" {
 			c.logger.Warn("could not request auth credentials. Invalid state")
-			rw.WriteHeader(http.StatusForbidden)
+			embeddable.ErrorPage.Execute(rw, map[string]interface{}{
+				"errorMain":    "Something went wrong",
+				"errorSubtext": "Please reload the page",
+				"reloadButton": "Reload",
+			})
 			return
 		}
+
+		c.logger.Debugf("auth state is not empty: %s", state)
 
 		session, err := c.store.Get(r, "auth-session")
 		if err != nil {
 			rw.WriteHeader(http.StatusInternalServerError)
-			c.logger.Errorf("could not get session: %s", err.Error())
+			embeddable.ErrorPage.Execute(rw, map[string]interface{}{
+				"errorMain":    "Something went wrong",
+				"errorSubtext": "Please reload the page",
+				"reloadButton": "Reload",
+			})
 			return
 		}
 
-		if state != session.Values["state"] {
+		sessState, ok := session.Values["state"].(string)
+		if !ok {
+			c.logger.Debug("can't cast session state")
+			http.Redirect(rw, r, "/oauth/auth", http.StatusMovedPermanently)
+			return
+		}
+
+		if state != sessState {
+			c.logger.Debugf("auth state %s doesn't match %s", state, sessState)
 			http.Redirect(rw, r, "/oauth/auth", http.StatusMovedPermanently)
 			return
 		}
@@ -142,22 +165,36 @@ func (c AuthController) BuildGetRedirect() http.HandlerFunc {
 		session.Options.MaxAge = -1
 		if err := session.Save(r, rw); err != nil {
 			rw.WriteHeader(http.StatusInternalServerError)
-			c.logger.Errorf("could not remove session. Reason: %s", err.Error())
+			embeddable.ErrorPage.Execute(rw, map[string]interface{}{
+				"errorMain":    "Something went wrong",
+				"errorSubtext": "Please reload the page",
+				"reloadButton": "Reload",
+			})
 			return
 		}
+
+		c.logger.Debugf("auth state %s has been removed", state)
 
 		credentials, err := c.boxClient.
 			GetAuthCredentials(context.Background(), code, c.oauth.ClientID, c.oauth.ClientSecret)
 		if err != nil {
 			c.logger.Errorf("could not get user credentials: %s", err.Error())
-			rw.WriteHeader(http.StatusInternalServerError)
+			embeddable.ErrorPage.Execute(rw, map[string]interface{}{
+				"errorMain":    "Something went wrong",
+				"errorSubtext": "Please reload the page",
+				"reloadButton": "Reload",
+			})
 			return
 		}
 
 		user, err := c.boxClient.GetMe(context.Background(), credentials.AccessToken)
 		if err != nil {
 			c.logger.Errorf("could not get user info: %s", err.Error())
-			rw.WriteHeader(http.StatusForbidden)
+			embeddable.ErrorPage.Execute(rw, map[string]interface{}{
+				"errorMain":    "Something went wrong",
+				"errorSubtext": "Please reload the page",
+				"reloadButton": "Reload",
+			})
 			return
 		}
 
@@ -172,9 +209,14 @@ func (c AuthController) BuildGetRedirect() http.HandlerFunc {
 		var resp interface{}
 		if err := c.client.Call(r.Context(), req, &resp, client.WithRetries(3)); err != nil {
 			c.logger.Errorf("could not insert a new user: %s", err.Error())
+			embeddable.ErrorPage.Execute(rw, map[string]interface{}{
+				"errorMain":    "Something went wrong",
+				"errorSubtext": "Please reload the page",
+				"reloadButton": "Reload",
+			})
+			return
 		}
 
-		// TODO: Render success page
-		rw.WriteHeader(http.StatusOK)
+		http.Redirect(rw, r, "https://app.box.com", http.StatusMovedPermanently)
 	}
 }

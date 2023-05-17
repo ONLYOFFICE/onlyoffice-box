@@ -24,6 +24,7 @@ type BoxState struct {
 	UserID    string `json:"user_id" mapstructure:"user_id"`
 	FileID    string `json:"file_id" mapstructure:"file_id"`
 	UserAgent string `json:"user_agent" mapstructure:"user_agent"`
+	ForceEdit bool   `json:"force_edit,omitmepty"`
 }
 
 func (u BoxState) ToJSON() []byte {

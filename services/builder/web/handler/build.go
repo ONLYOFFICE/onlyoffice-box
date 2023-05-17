@@ -92,8 +92,8 @@ func (c ConfigHandler) processConfig(user response.UserResponse, req request.Box
 	var wg sync.WaitGroup
 	wg.Add(2)
 	errChan := make(chan error, 2)
-	userChan := make(chan response.BoxUser, 1)
-	fileChan := make(chan response.BoxFile, 1)
+	userChan := make(chan response.BoxUserResponse, 1)
+	fileChan := make(chan response.BoxFileResponse, 1)
 
 	go func() {
 		defer wg.Done()

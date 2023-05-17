@@ -27,6 +27,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/gorilla/sessions"
+	"golang.org/x/oauth2"
 )
 
 type BoxHTTPService struct {
@@ -34,12 +35,16 @@ type BoxHTTPService struct {
 	store            sessions.Store
 	authController   controller.AuthController
 	editorController controller.EditorController
+	fileController   controller.FileController
+	credentials      *oauth2.Config
 }
 
 // NewService initializes http server with options.
 func NewServer(
 	authController controller.AuthController,
 	editorController controller.EditorController,
+	fileController controller.FileController,
+	credentials *oauth2.Config,
 ) shttp.ServerEngine {
 	gin.SetMode(gin.ReleaseMode)
 
@@ -47,6 +52,8 @@ func NewServer(
 		mux:              chi.NewRouter(),
 		authController:   authController,
 		editorController: editorController,
+		fileController:   fileController,
+		credentials:      credentials,
 	}
 
 	return service
@@ -85,6 +92,12 @@ func (s *BoxHTTPService) InitializeRoutes() {
 
 		r.Route("/api", func(cr chi.Router) {
 			cr.Get("/editor", s.editorController.BuildGetEditor())
+			cr.Get("/convert", s.fileController.BuildConvertPage())
+			cr.Post("/convert", s.fileController.BuildConvertFile())
+		})
+
+		r.NotFound(func(rw http.ResponseWriter, r *http.Request) {
+			http.Redirect(rw, r, "/oauth/auth", http.StatusMovedPermanently)
 		})
 	})
 }

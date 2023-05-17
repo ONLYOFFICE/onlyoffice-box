@@ -48,14 +48,17 @@ func Server() *cli.Command {
 		Action: func(c *cli.Context) error {
 			var (
 				CONFIG_PATH = c.String("config_path")
-				// ENVIRONMENT = c.String("environment")
 			)
 
 			app := pkg.NewBootstrapper(
-				CONFIG_PATH, pkg.WithModules(
+				CONFIG_PATH,
+				pkg.WithModules(
 					controller.NewAuthController, controller.NewEditorController,
-					chttp.NewService, web.NewServer, shared.BuildNewIntegrationCredentialsConfig(CONFIG_PATH),
-					shared.NewBoxAPIClient, shared.BuildNewOnlyofficeConfig(CONFIG_PATH), crypto.NewStateGenerator,
+					controller.NewFileController,
+					chttp.NewService, web.NewServer,
+					shared.BuildNewIntegrationCredentialsConfig(CONFIG_PATH),
+					shared.NewBoxAPIClient, shared.BuildNewOnlyofficeConfig(CONFIG_PATH),
+					crypto.NewStateGenerator,
 				),
 			).Bootstrap()
 

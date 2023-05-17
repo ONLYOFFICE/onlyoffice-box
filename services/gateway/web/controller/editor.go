@@ -2,49 +2,42 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/ONLYOFFICE/onlyoffice-box/pkg/config"
-	"github.com/ONLYOFFICE/onlyoffice-box/pkg/crypto"
 	"github.com/ONLYOFFICE/onlyoffice-box/pkg/log"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/gateway/web/embeddable"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared/request"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared/response"
-	"github.com/gorilla/sessions"
 	"go-micro.dev/v4/client"
 )
 
 type EditorController struct {
-	client     client.Client
-	jwtManager crypto.JwtManager
-	store      *sessions.CookieStore
-	server     *config.ServerConfig
-	logger     log.Logger
+	client client.Client
+	server *config.ServerConfig
+	logger log.Logger
 }
 
 func NewEditorController(
 	client client.Client,
-	jwtManager crypto.JwtManager,
 	server *config.ServerConfig,
 	logger log.Logger,
 ) EditorController {
 	return EditorController{
-		client:     client,
-		jwtManager: jwtManager,
-		server:     server,
-		logger:     logger,
+		client: client,
+		server: server,
+		logger: logger,
 	}
 }
 
 func (c EditorController) BuildGetEditor() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		rw.Header().Set("Content-Type", "text/html")
-		query := r.URL.Query()
-		fileID, userID := query.Get("file"), query.Get("user")
-
-		if fileID == "" || userID == "" {
+		var state request.ConvertRequestBody
+		if err := json.Unmarshal([]byte(r.URL.Query().Get("state")), &state); err != nil {
 			embeddable.ErrorPage.ExecuteTemplate(rw, "error", map[string]interface{}{
 				"errorMain":    "Something went wrong",
 				"errorSubtext": "Please reload the page",
@@ -58,9 +51,10 @@ func (c EditorController) BuildGetEditor() http.HandlerFunc {
 		var config response.BuildConfigResponse
 		if err := c.client.Call(tctx, c.client.NewRequest(
 			fmt.Sprintf("%s:builder", c.server.Namespace), "ConfigHandler.BuildConfig", request.BoxState{
-				UserID:    userID,
-				FileID:    fileID,
+				UserID:    state.UserID,
+				FileID:    state.FileID,
 				UserAgent: r.UserAgent(),
+				ForceEdit: state.ForceEdit,
 			}), &config, client.WithRetries(3)); err != nil {
 			c.logger.Errorf("could not build an editor config: %s", err.Error())
 			rw.WriteHeader(http.StatusInternalServerError)
