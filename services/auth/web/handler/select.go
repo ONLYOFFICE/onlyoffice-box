@@ -20,6 +20,7 @@ package handler
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/ONLYOFFICE/onlyoffice-box/pkg/log"
@@ -58,7 +59,7 @@ func NewUserSelectHandler(
 }
 
 func (u UserSelectHandler) GetUser(ctx context.Context, uid *string, res *domain.UserAccess) error {
-	user, err, _ := group.Do(*uid, func() (interface{}, error) {
+	user, err, _ := group.Do(fmt.Sprintf("select-%s", *uid), func() (interface{}, error) {
 		user, err := u.service.GetUser(ctx, *uid)
 		if err != nil {
 			u.logger.Debugf("could not get user with id: %s. Reason: %s", *uid, err.Error())
