@@ -47,7 +47,6 @@ func Server() *cli.Command {
 		Action: func(c *cli.Context) error {
 			var (
 				CONFIG_PATH = c.String("config_path")
-				// ENVIRONMENT = c.String("environment")
 			)
 
 			app := pkg.NewBootstrapper(
