@@ -34,23 +34,23 @@ import (
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared/response"
 	"github.com/mileusna/useragent"
 	"go-micro.dev/v4/client"
-	"golang.org/x/oauth2"
 	"golang.org/x/sync/singleflight"
 )
 
-var _ErrOperationTimeout = errors.New("operation timeout")
+var (
+	_ErrOperationTimeout = errors.New("operation timeout")
+	group                singleflight.Group
+)
 
 type ConfigHandler struct {
-	client      client.Client
-	boxClient   shared.BoxAPI
-	jwtManager  crypto.JwtManager
-	hasher      crypto.Hasher
-	fileUtil    onlyoffice.OnlyofficeFileUtility
-	server      *config.ServerConfig
-	credentials *oauth2.Config
-	onlyoffice  *shared.OnlyofficeConfig
-	logger      plog.Logger
-	group       singleflight.Group
+	client     client.Client
+	boxClient  shared.BoxAPI
+	jwtManager crypto.JwtManager
+	hasher     crypto.Hasher
+	fileUtil   onlyoffice.OnlyofficeFileUtility
+	server     *config.ServerConfig
+	onlyoffice *shared.OnlyofficeConfig
+	logger     plog.Logger
 }
 
 func NewConfigHandler(
@@ -60,20 +60,18 @@ func NewConfigHandler(
 	hasher crypto.Hasher,
 	fileUtil onlyoffice.OnlyofficeFileUtility,
 	server *config.ServerConfig,
-	credentials *oauth2.Config,
 	onlyoffice *shared.OnlyofficeConfig,
 	logger plog.Logger,
 ) ConfigHandler {
 	return ConfigHandler{
-		client:      client,
-		boxClient:   boxClient,
-		jwtManager:  jwtManager,
-		hasher:      hasher,
-		fileUtil:    fileUtil,
-		server:      server,
-		credentials: credentials,
-		onlyoffice:  onlyoffice,
-		logger:      logger,
+		client:     client,
+		boxClient:  boxClient,
+		jwtManager: jwtManager,
+		hasher:     hasher,
+		fileUtil:   fileUtil,
+		server:     server,
+		onlyoffice: onlyoffice,
+		logger:     logger,
 	}
 }
 
@@ -206,7 +204,7 @@ func (c ConfigHandler) processConfig(user response.UserResponse, req request.Box
 func (c ConfigHandler) BuildConfig(ctx context.Context, payload request.BoxState, res *response.BuildConfigResponse) error {
 	c.logger.Debugf("processing a docs config: %s", payload.FileID)
 
-	config, err, _ := c.group.Do(fmt.Sprintf("%s:%s", payload.UserID, payload.FileID), func() (interface{}, error) {
+	config, err, _ := group.Do(fmt.Sprintf("%s:%s", payload.UserID, payload.FileID), func() (interface{}, error) {
 		req := c.client.NewRequest(
 			fmt.Sprintf("%s:auth", c.server.Namespace), "UserSelectHandler.GetUser",
 			fmt.Sprint(payload.UserID),

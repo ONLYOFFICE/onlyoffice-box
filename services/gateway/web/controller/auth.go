@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/ONLYOFFICE/onlyoffice-box/pkg/config"
 	"github.com/ONLYOFFICE/onlyoffice-box/pkg/crypto"
@@ -30,6 +31,7 @@ import (
 	"github.com/ONLYOFFICE/onlyoffice-box/services/gateway/web/embeddable"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared/request"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/sessions"
 	cv "github.com/nirasan/go-oauth-pkce-code-verifier"
 	"go-micro.dev/v4/client"
@@ -42,8 +44,9 @@ var group singleflight.Group
 type AuthController struct {
 	client         client.Client
 	boxClient      shared.BoxAPI
-	stateGenerator crypto.StateGenerator
+	jwtManager     crypto.JwtManager
 	store          *sessions.CookieStore
+	stateGenerator crypto.StateGenerator
 	config         *config.ServerConfig
 	oauth          *oauth2.Config
 	logger         log.Logger
@@ -52,6 +55,8 @@ type AuthController struct {
 func NewAuthController(
 	client client.Client,
 	boxClient shared.BoxAPI,
+	jwtManager crypto.JwtManager,
+	store *sessions.CookieStore,
 	stateGenerator crypto.StateGenerator,
 	config *config.ServerConfig,
 	oauth *oauth2.Config,
@@ -60,8 +65,9 @@ func NewAuthController(
 	return AuthController{
 		client:         client,
 		boxClient:      boxClient,
+		jwtManager:     jwtManager,
+		store:          store,
 		stateGenerator: stateGenerator,
-		store:          sessions.NewCookieStore([]byte(oauth.ClientSecret)),
 		config:         config,
 		oauth:          oauth,
 		logger:         logger,
@@ -73,7 +79,7 @@ func (c AuthController) BuildGetAuth() http.HandlerFunc {
 		v, _ := cv.CreateCodeVerifier()
 		verifier := v.String()
 
-		session, err := c.store.Get(r, "auth-session")
+		session, err := c.store.Get(r, "onlyoffice-auth")
 		if err != nil {
 			// TODO: Error page
 			c.logger.Errorf("could not get session store: %s", err.Error())
@@ -136,7 +142,7 @@ func (c AuthController) BuildGetRedirect() http.HandlerFunc {
 
 		c.logger.Debugf("auth state is not empty: %s", state)
 
-		session, err := c.store.Get(r, "auth-session")
+		session, err := c.store.Get(r, "onlyoffice-auth")
 		if err != nil {
 			rw.WriteHeader(http.StatusInternalServerError)
 			embeddable.ErrorPage.Execute(rw, map[string]interface{}{
@@ -209,6 +215,33 @@ func (c AuthController) BuildGetRedirect() http.HandlerFunc {
 		var resp interface{}
 		if err := c.client.Call(r.Context(), req, &resp, client.WithRetries(3)); err != nil {
 			c.logger.Errorf("could not insert a new user: %s", err.Error())
+			embeddable.ErrorPage.Execute(rw, map[string]interface{}{
+				"errorMain":    "Something went wrong",
+				"errorSubtext": "Please reload the page",
+				"reloadButton": "Reload",
+			})
+			return
+		}
+
+		signature, err := c.jwtManager.Sign(c.oauth.ClientSecret, jwt.RegisteredClaims{
+			ID:        user.ID,
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(7 * 24 * time.Hour)),
+		})
+
+		if err != nil {
+			c.logger.Errorf("could not issue a new jwt: %s", err.Error())
+			embeddable.ErrorPage.Execute(rw, map[string]interface{}{
+				"errorMain":    "Something went wrong",
+				"errorSubtext": "Please reload the page",
+				"reloadButton": "Reload",
+			})
+			return
+		}
+
+		session.Values["token"] = signature
+		session.Options.MaxAge = 60 * 60 * 23 * 7
+		if err := session.Save(r, rw); err != nil {
+			c.logger.Errorf("could not save a new session cookie: %s", err.Error())
 			embeddable.ErrorPage.Execute(rw, map[string]interface{}{
 				"errorMain":    "Something went wrong",
 				"errorSubtext": "Please reload the page",

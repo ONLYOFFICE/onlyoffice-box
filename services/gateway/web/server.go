@@ -23,20 +23,17 @@ import (
 
 	shttp "github.com/ONLYOFFICE/onlyoffice-box/pkg/service/http"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/gateway/web/controller"
-	"github.com/gin-gonic/gin"
+	"github.com/ONLYOFFICE/onlyoffice-box/services/gateway/web/middleware"
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
-	"github.com/gorilla/sessions"
-	"golang.org/x/oauth2"
 )
 
 type BoxHTTPService struct {
-	mux              *chi.Mux
-	store            sessions.Store
-	authController   controller.AuthController
-	editorController controller.EditorController
-	fileController   controller.FileController
-	credentials      *oauth2.Config
+	mux               *chi.Mux
+	authController    controller.AuthController
+	editorController  controller.EditorController
+	fileController    controller.FileController
+	sessionMiddleware middleware.SessionMiddleware
 }
 
 // NewService initializes http server with options.
@@ -44,16 +41,14 @@ func NewServer(
 	authController controller.AuthController,
 	editorController controller.EditorController,
 	fileController controller.FileController,
-	credentials *oauth2.Config,
+	sessionMiddleware middleware.SessionMiddleware,
 ) shttp.ServerEngine {
-	gin.SetMode(gin.ReleaseMode)
-
 	service := BoxHTTPService{
-		mux:              chi.NewRouter(),
-		authController:   authController,
-		editorController: editorController,
-		fileController:   fileController,
-		credentials:      credentials,
+		mux:               chi.NewRouter(),
+		authController:    authController,
+		editorController:  editorController,
+		fileController:    fileController,
+		sessionMiddleware: sessionMiddleware,
 	}
 
 	return service
@@ -85,15 +80,16 @@ func (s *BoxHTTPService) InitializeRoutes() {
 
 		r.Handle("/static/*", http.StripPrefix("/static/", fs))
 
-		r.Route("/oauth", func(cr chi.Router) {
-			cr.Get("/auth", s.authController.BuildGetAuth())
-			cr.Get("/redirect", s.authController.BuildGetRedirect())
-		})
-
-		r.Route("/api", func(cr chi.Router) {
+		r.Route("/", func(cr chi.Router) {
+			cr.Use(s.sessionMiddleware.Protect)
 			cr.Get("/editor", s.editorController.BuildGetEditor())
 			cr.Get("/convert", s.fileController.BuildConvertPage())
 			cr.Post("/convert", s.fileController.BuildConvertFile())
+		})
+
+		r.Route("/oauth", func(cr chi.Router) {
+			cr.Get("/auth", s.authController.BuildGetAuth())
+			cr.Get("/redirect", s.authController.BuildGetRedirect())
 		})
 
 		r.NotFound(func(rw http.ResponseWriter, r *http.Request) {

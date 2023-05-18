@@ -98,11 +98,11 @@ func (c FileController) BuildConvertPage() http.HandlerFunc {
 		}
 
 		if c.fileUtil.IsExtensionEditable(file.Extension) || c.fileUtil.IsExtensionViewOnly(file.Extension) {
-			http.Redirect(rw, r, fmt.Sprintf("/api/editor?state=%s", url.QueryEscape(string(request.ConvertRequestBody{
+			http.Redirect(rw, r, fmt.Sprintf("/editor?state=%s&user=%s", url.QueryEscape(string(request.ConvertRequestBody{
 				Action: "edit",
 				UserID: ures.ID,
 				FileID: fileID,
-			}.ToJSON()))), http.StatusMovedPermanently)
+			}.ToJSON())), userID), http.StatusMovedPermanently)
 			return
 		}
 
@@ -176,7 +176,7 @@ func (c FileController) BuildConvertFile() http.HandlerFunc {
 			}
 			http.Redirect(
 				rw, r,
-				fmt.Sprintf("/api/editor?state=%s", url.QueryEscape(string(nbody.ToJSON()))),
+				fmt.Sprintf("/editor?state=%s&user=%s", url.QueryEscape(string(nbody.ToJSON())), nbody.UserID),
 				http.StatusMovedPermanently,
 			)
 			return
@@ -184,7 +184,7 @@ func (c FileController) BuildConvertFile() http.HandlerFunc {
 			body.ForceEdit = true
 			http.Redirect(
 				rw, r,
-				fmt.Sprintf("/api/editor?state=%s", url.QueryEscape(string(body.ToJSON()))),
+				fmt.Sprintf("/editor?state=%s&user=%s", url.QueryEscape(string(body.ToJSON())), body.UserID),
 				http.StatusMovedPermanently,
 			)
 			return
@@ -192,7 +192,7 @@ func (c FileController) BuildConvertFile() http.HandlerFunc {
 			http.Redirect(
 				rw, r,
 				fmt.Sprintf(
-					"/api/editor?state=%s", url.QueryEscape(string(body.ToJSON())),
+					"/editor?state=%s&user=%s", url.QueryEscape(string(body.ToJSON())), body.UserID,
 				),
 				http.StatusMovedPermanently,
 			)

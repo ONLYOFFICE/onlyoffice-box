@@ -24,6 +24,7 @@ import (
 	chttp "github.com/ONLYOFFICE/onlyoffice-box/pkg/service/http"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/gateway/web"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/gateway/web/controller"
+	"github.com/ONLYOFFICE/onlyoffice-box/services/gateway/web/middleware"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared"
 	"github.com/urfave/cli/v2"
 )
@@ -38,11 +39,6 @@ func Server() *cli.Command {
 				Name:    "config_path",
 				Usage:   "sets custom configuration path",
 				Aliases: []string{"config", "conf", "c"},
-			},
-			&cli.StringFlag{
-				Name:    "environment",
-				Usage:   "sets servers environment (development, testing, production)",
-				Aliases: []string{"env", "e"},
 			},
 		},
 		Action: func(c *cli.Context) error {
@@ -59,6 +55,8 @@ func Server() *cli.Command {
 					shared.BuildNewIntegrationCredentialsConfig(CONFIG_PATH),
 					shared.NewBoxAPIClient, shared.BuildNewOnlyofficeConfig(CONFIG_PATH),
 					crypto.NewStateGenerator,
+					middleware.NewSessionStore,
+					middleware.NewSessionMiddleware,
 				),
 			).Bootstrap()
 

@@ -37,18 +37,16 @@ import (
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared/response"
 	"go-micro.dev/v4/client"
 	"go-micro.dev/v4/util/backoff"
-	"golang.org/x/oauth2"
 )
 
 type CallbackController struct {
-	client      client.Client
-	jwtManger   crypto.JwtManager
-	fileUtil    onlyoffice.OnlyofficeFileUtility
-	boxAPI      shared.BoxAPI
-	server      *config.ServerConfig
-	credentials *oauth2.Config
-	onlyoffice  *shared.OnlyofficeConfig
-	logger      plog.Logger
+	client     client.Client
+	jwtManger  crypto.JwtManager
+	fileUtil   onlyoffice.OnlyofficeFileUtility
+	boxAPI     shared.BoxAPI
+	server     *config.ServerConfig
+	onlyoffice *shared.OnlyofficeConfig
+	logger     plog.Logger
 }
 
 func NewCallbackController(
@@ -57,19 +55,17 @@ func NewCallbackController(
 	fileUtil onlyoffice.OnlyofficeFileUtility,
 	boxAPI shared.BoxAPI,
 	server *config.ServerConfig,
-	credentials *oauth2.Config,
 	onlyoffice *shared.OnlyofficeConfig,
 	logger plog.Logger,
 ) CallbackController {
 	return CallbackController{
-		client:      client,
-		jwtManger:   jwtManger,
-		fileUtil:    fileUtil,
-		boxAPI:      boxAPI,
-		server:      server,
-		credentials: credentials,
-		onlyoffice:  onlyoffice,
-		logger:      logger,
+		client:     client,
+		jwtManger:  jwtManger,
+		fileUtil:   fileUtil,
+		boxAPI:     boxAPI,
+		server:     server,
+		onlyoffice: onlyoffice,
+		logger:     logger,
 	}
 }
 

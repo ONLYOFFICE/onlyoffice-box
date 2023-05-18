@@ -38,11 +38,6 @@ func Server() *cli.Command {
 				Usage:   "sets custom configuration path",
 				Aliases: []string{"config", "conf", "c"},
 			},
-			&cli.StringFlag{
-				Name:    "environment",
-				Usage:   "sets servers environment (development, testing, production)",
-				Aliases: []string{"env", "e"},
-			},
 		},
 		Action: func(c *cli.Context) error {
 			var (
