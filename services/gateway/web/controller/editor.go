@@ -12,6 +12,7 @@ import (
 	"github.com/ONLYOFFICE/onlyoffice-box/services/gateway/web/embeddable"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared/request"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared/response"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"go-micro.dev/v4/client"
 )
 
@@ -37,12 +38,21 @@ func (c EditorController) BuildGetEditor() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		rw.Header().Set("Content-Type", "text/html")
 		var state request.ConvertRequestBody
+		loc := i18n.NewLocalizer(embeddable.Bundle, r.Header.Get("Locale"))
+		errMsg := map[string]interface{}{
+			"errorMain": loc.MustLocalize(&i18n.LocalizeConfig{
+				MessageID: "errorMain",
+			}),
+			"errorSubtext": loc.MustLocalize(&i18n.LocalizeConfig{
+				MessageID: "errorSubtext",
+			}),
+			"reloadButton": loc.MustLocalize(&i18n.LocalizeConfig{
+				MessageID: "reloadButton",
+			}),
+		}
+
 		if err := json.Unmarshal([]byte(r.URL.Query().Get("state")), &state); err != nil {
-			embeddable.ErrorPage.ExecuteTemplate(rw, "error", map[string]interface{}{
-				"errorMain":    "Something went wrong",
-				"errorSubtext": "Please reload the page",
-				"reloadButton": "Reload",
-			})
+			embeddable.ErrorPage.ExecuteTemplate(rw, "error", errMsg)
 			return
 		}
 
@@ -62,10 +72,12 @@ func (c EditorController) BuildGetEditor() http.HandlerFunc {
 		}
 
 		embeddable.EditorPage.Execute(rw, map[string]interface{}{
-			"apijs":        fmt.Sprintf("%s/web-apps/apps/api/documents/api.js", config.ServerURL),
-			"config":       string(config.ToJSON()),
-			"docType":      config.DocumentType,
-			"cancelButton": "Cancel",
+			"apijs":   fmt.Sprintf("%s/web-apps/apps/api/documents/api.js", config.ServerURL),
+			"config":  string(config.ToJSON()),
+			"docType": config.DocumentType,
+			"cancelButton": loc.MustLocalize(&i18n.LocalizeConfig{
+				MessageID: "cancelButton",
+			}),
 		})
 	}
 }

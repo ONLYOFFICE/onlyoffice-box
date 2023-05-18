@@ -65,12 +65,21 @@ func (c FileController) BuildConvertPage() http.HandlerFunc {
 		rw.Header().Set("Content-Type", "text/html")
 		query := r.URL.Query()
 		fileID, userID := query.Get("file"), query.Get("user")
+		loc := i18n.NewLocalizer(embeddable.Bundle, r.Header.Get("Locale"))
+		errMsg := map[string]interface{}{
+			"errorMain": loc.MustLocalize(&i18n.LocalizeConfig{
+				MessageID: "errorMain",
+			}),
+			"errorSubtext": loc.MustLocalize(&i18n.LocalizeConfig{
+				MessageID: "errorSubtext",
+			}),
+			"reloadButton": loc.MustLocalize(&i18n.LocalizeConfig{
+				MessageID: "reloadButton",
+			}),
+		}
+
 		if fileID == "" || userID == "" {
-			embeddable.ErrorPage.ExecuteTemplate(rw, "error", map[string]interface{}{
-				"errorMain":    "Something went wrong",
-				"errorSubtext": "Please reload the page",
-				"reloadButton": "Reload",
-			})
+			embeddable.ErrorPage.ExecuteTemplate(rw, "error", errMsg)
 			return
 		}
 
@@ -80,21 +89,13 @@ func (c FileController) BuildConvertPage() http.HandlerFunc {
 			userID,
 		), &ures); err != nil {
 			c.logger.Debugf("could not get user %s access info: %s", userID, err.Error())
-			embeddable.ErrorPage.Execute(rw, map[string]interface{}{
-				"errorMain":    "Something went wrong",
-				"errorSubtext": "Please reload the page",
-				"reloadButton": "Reload",
-			})
+			embeddable.ErrorPage.Execute(rw, errMsg)
 			return
 		}
 
 		file, err := c.boxClient.GetFileInfo(r.Context(), ures.AccessToken, fileID)
 		if err != nil {
-			embeddable.ErrorPage.Execute(rw, map[string]interface{}{
-				"errorMain":    "Something went wrong",
-				"errorSubtext": "Please reload the page",
-				"reloadButton": "Reload",
-			})
+			embeddable.ErrorPage.Execute(rw, errMsg)
 			return
 		}
 
@@ -107,7 +108,6 @@ func (c FileController) BuildConvertPage() http.HandlerFunc {
 			return
 		}
 
-		loc := i18n.NewLocalizer(embeddable.Bundle, "en")
 		embeddable.ConvertPage.Execute(rw, map[string]interface{}{
 			"CSRF":     csrf.Token(r),
 			"OOXML":    c.fileUtil.IsExtensionOOXMLConvertable(file.Extension),

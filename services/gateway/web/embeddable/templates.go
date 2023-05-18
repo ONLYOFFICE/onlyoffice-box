@@ -34,4 +34,11 @@ func init() {
 	}
 
 	Bundle.MustAddMessages(emsg.Tag, emsg.Messages...)
+
+	rmsg, err := Bundle.LoadMessageFileFS(localeFiles, "locales/ru.json")
+	if err != nil {
+		panic(err)
+	}
+
+	Bundle.MustAddMessages(emsg.Tag, rmsg.Messages...)
 }
