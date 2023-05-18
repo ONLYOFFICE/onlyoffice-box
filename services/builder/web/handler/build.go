@@ -145,7 +145,7 @@ func (c ConfigHandler) processConfig(user response.UserResponse, req request.Box
 	filename := c.fileUtil.EscapeFilename(file.Name)
 	config = response.BuildConfigResponse{
 		Document: response.Document{
-			Key:   string(c.hasher.Hash(file.ModifiedAt)),
+			Key:   string(c.hasher.Hash(file.ModifiedAt + file.ID)),
 			Title: filename,
 			URL:   url,
 		},
