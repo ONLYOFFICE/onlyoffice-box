@@ -26,6 +26,8 @@ import (
 	"github.com/ONLYOFFICE/onlyoffice-box/services/gateway/web/middleware"
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
+	"github.com/gorilla/csrf"
+	"golang.org/x/oauth2"
 )
 
 type BoxHTTPService struct {
@@ -34,6 +36,7 @@ type BoxHTTPService struct {
 	editorController  controller.EditorController
 	fileController    controller.FileController
 	sessionMiddleware middleware.SessionMiddleware
+	csrfMiddleware    func(http.Handler) http.Handler
 }
 
 // NewService initializes http server with options.
@@ -42,6 +45,7 @@ func NewServer(
 	editorController controller.EditorController,
 	fileController controller.FileController,
 	sessionMiddleware middleware.SessionMiddleware,
+	credentials *oauth2.Config,
 ) shttp.ServerEngine {
 	service := BoxHTTPService{
 		mux:               chi.NewRouter(),
@@ -49,6 +53,12 @@ func NewServer(
 		editorController:  editorController,
 		fileController:    fileController,
 		sessionMiddleware: sessionMiddleware,
+		csrfMiddleware: csrf.Protect(
+			[]byte(credentials.ClientSecret),
+			csrf.HttpOnly(true),
+			csrf.Secure(true),
+			csrf.SameSite(csrf.SameSiteNoneMode),
+		),
 	}
 
 	return service
@@ -81,7 +91,7 @@ func (s *BoxHTTPService) InitializeRoutes() {
 		r.Handle("/static/*", http.StripPrefix("/static/", fs))
 
 		r.Route("/", func(cr chi.Router) {
-			cr.Use(s.sessionMiddleware.Protect)
+			cr.Use(s.sessionMiddleware.Protect, s.csrfMiddleware)
 			cr.Get("/editor", s.editorController.BuildGetEditor())
 			cr.Get("/convert", s.fileController.BuildConvertPage())
 			cr.Post("/convert", s.fileController.BuildConvertFile())

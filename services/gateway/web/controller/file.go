@@ -20,6 +20,7 @@ import (
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared/request"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared/response"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/gorilla/csrf"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"go-micro.dev/v4/client"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -108,6 +109,7 @@ func (c FileController) BuildConvertPage() http.HandlerFunc {
 
 		loc := i18n.NewLocalizer(embeddable.Bundle, "en")
 		embeddable.ConvertPage.Execute(rw, map[string]interface{}{
+			"CSRF":     csrf.Token(r),
 			"OOXML":    c.fileUtil.IsExtensionOOXMLConvertable(file.Extension),
 			"LossEdit": c.fileUtil.IsExtensionLossEditable(file.Extension),
 			"User":     userID,

@@ -209,7 +209,6 @@
                                 <button class="button button_secondary" style="flex-grow: 1; flex-basis: 0;"
                                     onclick="window.close();" :disabled="loading">{{.cancelButton}}</button>
                             </div>
-                            {{ .csrfField }}
                         </form>
                     </div>
                 </div>
@@ -223,6 +222,7 @@
         </div>
     </div>
     <script>
+        var token = "{{.CSRF}}";
         var user = "{{.User}}";
         var file = "{{.File}}";
         function convertForm() {
@@ -238,8 +238,11 @@
                     const urlSearchParams = new URLSearchParams(window.location.search);
                     const params = Object.fromEntries(urlSearchParams.entries());
                     try {
-                        const resp = await fetch(`/convert`, {
+                        const resp = await fetch(`/convert?user=${user}`, {
                             method: 'POST',
+                            headers: {
+                                "X-CSRF-Token": token,
+                            },
                             body: JSON.stringify({
                                 action: this.action,
                                 user_id: user,
