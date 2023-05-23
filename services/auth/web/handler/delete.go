@@ -22,8 +22,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ONLYOFFICE/onlyoffice-box/pkg/log"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/auth/web/core/port"
+	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/log"
 	"go-micro.dev/v4/client"
 )
 

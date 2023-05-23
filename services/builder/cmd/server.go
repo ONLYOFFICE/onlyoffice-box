@@ -19,11 +19,11 @@
 package cmd
 
 import (
-	"github.com/ONLYOFFICE/onlyoffice-box/pkg"
-	"github.com/ONLYOFFICE/onlyoffice-box/pkg/service/rpc"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/builder/web"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/builder/web/handler"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared"
+	pkg "github.com/ONLYOFFICE/onlyoffice-integration-adapters"
+	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/service/rpc"
 	"github.com/urfave/cli/v2"
 )
 

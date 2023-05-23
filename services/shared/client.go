@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/ONLYOFFICE/onlyoffice-box/pkg/log"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared/response"
+	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/log"
 	"github.com/go-resty/resty/v2"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )

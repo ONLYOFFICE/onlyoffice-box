@@ -28,13 +28,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ONLYOFFICE/onlyoffice-box/pkg/config"
-	"github.com/ONLYOFFICE/onlyoffice-box/pkg/crypto"
-	plog "github.com/ONLYOFFICE/onlyoffice-box/pkg/log"
-	"github.com/ONLYOFFICE/onlyoffice-box/pkg/onlyoffice"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared/request"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared/response"
+	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/config"
+	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/crypto"
+	plog "github.com/ONLYOFFICE/onlyoffice-integration-adapters/log"
+	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/onlyoffice"
 	"go-micro.dev/v4/client"
 	"go-micro.dev/v4/util/backoff"
 )

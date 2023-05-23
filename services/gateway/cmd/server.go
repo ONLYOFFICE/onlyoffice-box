@@ -19,13 +19,13 @@
 package cmd
 
 import (
-	"github.com/ONLYOFFICE/onlyoffice-box/pkg"
-	"github.com/ONLYOFFICE/onlyoffice-box/pkg/crypto"
-	chttp "github.com/ONLYOFFICE/onlyoffice-box/pkg/service/http"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/gateway/web"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/gateway/web/controller"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/gateway/web/middleware"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared"
+	pkg "github.com/ONLYOFFICE/onlyoffice-integration-adapters"
+	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/crypto"
+	chttp "github.com/ONLYOFFICE/onlyoffice-integration-adapters/service/http"
 	"github.com/urfave/cli/v2"
 )
 

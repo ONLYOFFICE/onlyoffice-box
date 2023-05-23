@@ -19,8 +19,8 @@
 package web
 
 import (
-	"github.com/ONLYOFFICE/onlyoffice-box/pkg/service/rpc"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/auth/web/handler"
+	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/service/rpc"
 )
 
 type AuthRPCServer struct {

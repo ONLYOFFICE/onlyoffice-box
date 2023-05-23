@@ -7,11 +7,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/ONLYOFFICE/onlyoffice-box/pkg/config"
-	"github.com/ONLYOFFICE/onlyoffice-box/pkg/log"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/gateway/web/embeddable"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared/request"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared/response"
+	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/config"
+	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/log"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"go-micro.dev/v4/client"
 )

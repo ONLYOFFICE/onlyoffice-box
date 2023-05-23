@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/ONLYOFFICE/onlyoffice-box/pkg/crypto"
-	"github.com/ONLYOFFICE/onlyoffice-box/pkg/log"
+	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/crypto"
+	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/log"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"

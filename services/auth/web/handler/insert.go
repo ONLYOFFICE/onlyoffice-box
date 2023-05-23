@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ONLYOFFICE/onlyoffice-box/pkg/log"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/auth/web/core/domain"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/auth/web/core/port"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared/request"
+	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/log"
 )
 
 type UserInsertHandler struct {
