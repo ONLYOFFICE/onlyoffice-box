@@ -3,7 +3,7 @@ module github.com/ONLYOFFICE/onlyoffice-box
 go 1.19
 
 require (
-	github.com/ONLYOFFICE/onlyoffice-integration-adapters v0.1.0
+	github.com/ONLYOFFICE/onlyoffice-integration-adapters v0.1.1
 	github.com/gorilla/securecookie v1.1.1
 	github.com/stretchr/testify v1.8.2
 	go.mongodb.org/mongo-driver v1.9.1
