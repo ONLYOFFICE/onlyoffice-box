@@ -76,28 +76,30 @@ func NewAuthController(
 
 func (c AuthController) BuildGetAuth() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
+		rw.Header().Set("Content-Type", "text/html")
 		v, _ := cv.CreateCodeVerifier()
 		verifier := v.String()
+		errMsgs := map[string]interface{}{
+			"errorMain":    "Installation Failed",
+			"errorSubtext": "Please try again or contact admin",
+			"closeButton":  "Close",
+		}
 
 		session, err := c.store.Get(r, "onlyoffice-auth")
 		if err != nil {
-			// TODO: Error page
-			c.logger.Errorf("could not get session store: %s", err.Error())
-			rw.WriteHeader(http.StatusInternalServerError)
+			embeddable.InstallationErrorPage.Execute(rw, errMsgs)
 			return
 		}
 
 		state, err := c.stateGenerator.GenerateState(verifier)
 		if err != nil {
-			c.logger.Errorf("could not generate a new state: %s", err.Error())
-			rw.WriteHeader(http.StatusInternalServerError)
+			embeddable.InstallationErrorPage.Execute(rw, errMsgs)
 			return
 		}
 
 		session.Values["state"] = state
 		if err := session.Save(r, rw); err != nil {
-			c.logger.Errorf("could not save session: %s", err.Error())
-			rw.WriteHeader(http.StatusInternalServerError)
+			embeddable.InstallationErrorPage.Execute(rw, errMsgs)
 			return
 		}
 
@@ -116,15 +118,18 @@ func (c AuthController) BuildGetAuth() http.HandlerFunc {
 
 func (c AuthController) BuildGetRedirect() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
+		rw.Header().Set("Content-Type", "text/html")
 		query := r.URL.Query()
 		code, state := query.Get("code"), query.Get("state")
+		errMsgs := map[string]interface{}{
+			"errorMain":    "Installation Failed",
+			"errorSubtext": "Please try again or contact admin",
+			"closeButton":  "Close",
+		}
+
 		if code == "" {
 			c.logger.Warn("could not request auth credentials. Invalid authorization code")
-			embeddable.ErrorPage.Execute(rw, map[string]interface{}{
-				"errorMain":    "Something went wrong",
-				"errorSubtext": "Please reload the page",
-				"reloadButton": "Reload",
-			})
+			embeddable.InstallationErrorPage.Execute(rw, errMsgs)
 			return
 		}
 
@@ -132,11 +137,7 @@ func (c AuthController) BuildGetRedirect() http.HandlerFunc {
 
 		if state == "" {
 			c.logger.Warn("could not request auth credentials. Invalid state")
-			embeddable.ErrorPage.Execute(rw, map[string]interface{}{
-				"errorMain":    "Something went wrong",
-				"errorSubtext": "Please reload the page",
-				"reloadButton": "Reload",
-			})
+			embeddable.InstallationErrorPage.Execute(rw, errMsgs)
 			return
 		}
 
@@ -145,11 +146,7 @@ func (c AuthController) BuildGetRedirect() http.HandlerFunc {
 		session, err := c.store.Get(r, "onlyoffice-auth")
 		if err != nil {
 			rw.WriteHeader(http.StatusInternalServerError)
-			embeddable.ErrorPage.Execute(rw, map[string]interface{}{
-				"errorMain":    "Something went wrong",
-				"errorSubtext": "Please reload the page",
-				"reloadButton": "Reload",
-			})
+			embeddable.InstallationErrorPage.Execute(rw, errMsgs)
 			return
 		}
 
@@ -171,11 +168,7 @@ func (c AuthController) BuildGetRedirect() http.HandlerFunc {
 		session.Options.MaxAge = -1
 		if err := session.Save(r, rw); err != nil {
 			rw.WriteHeader(http.StatusInternalServerError)
-			embeddable.ErrorPage.Execute(rw, map[string]interface{}{
-				"errorMain":    "Something went wrong",
-				"errorSubtext": "Please reload the page",
-				"reloadButton": "Reload",
-			})
+			embeddable.InstallationErrorPage.Execute(rw, errMsgs)
 			return
 		}
 
@@ -185,22 +178,14 @@ func (c AuthController) BuildGetRedirect() http.HandlerFunc {
 			GetAuthCredentials(context.Background(), code, c.oauth.ClientID, c.oauth.ClientSecret)
 		if err != nil {
 			c.logger.Errorf("could not get user credentials: %s", err.Error())
-			embeddable.ErrorPage.Execute(rw, map[string]interface{}{
-				"errorMain":    "Something went wrong",
-				"errorSubtext": "Please reload the page",
-				"reloadButton": "Reload",
-			})
+			embeddable.InstallationErrorPage.Execute(rw, errMsgs)
 			return
 		}
 
 		user, err := c.boxClient.GetMe(context.Background(), credentials.AccessToken)
 		if err != nil {
 			c.logger.Errorf("could not get user info: %s", err.Error())
-			embeddable.ErrorPage.Execute(rw, map[string]interface{}{
-				"errorMain":    "Something went wrong",
-				"errorSubtext": "Please reload the page",
-				"reloadButton": "Reload",
-			})
+			embeddable.InstallationErrorPage.Execute(rw, errMsgs)
 			return
 		}
 
@@ -215,11 +200,7 @@ func (c AuthController) BuildGetRedirect() http.HandlerFunc {
 		var resp interface{}
 		if err := c.client.Call(r.Context(), req, &resp, client.WithRetries(3)); err != nil {
 			c.logger.Errorf("could not insert a new user: %s", err.Error())
-			embeddable.ErrorPage.Execute(rw, map[string]interface{}{
-				"errorMain":    "Something went wrong",
-				"errorSubtext": "Please reload the page",
-				"reloadButton": "Reload",
-			})
+			embeddable.InstallationErrorPage.Execute(rw, errMsgs)
 			return
 		}
 
@@ -230,11 +211,7 @@ func (c AuthController) BuildGetRedirect() http.HandlerFunc {
 
 		if err != nil {
 			c.logger.Errorf("could not issue a new jwt: %s", err.Error())
-			embeddable.ErrorPage.Execute(rw, map[string]interface{}{
-				"errorMain":    "Something went wrong",
-				"errorSubtext": "Please reload the page",
-				"reloadButton": "Reload",
-			})
+			embeddable.InstallationErrorPage.Execute(rw, errMsgs)
 			return
 		}
 
@@ -243,11 +220,7 @@ func (c AuthController) BuildGetRedirect() http.HandlerFunc {
 		session.Options.MaxAge = 60 * 60 * 23 * 7
 		if err := session.Save(r, rw); err != nil {
 			c.logger.Errorf("could not save a new session cookie: %s", err.Error())
-			embeddable.ErrorPage.Execute(rw, map[string]interface{}{
-				"errorMain":    "Something went wrong",
-				"errorSubtext": "Please reload the page",
-				"reloadButton": "Reload",
-			})
+			embeddable.InstallationErrorPage.Execute(rw, errMsgs)
 			return
 		}
 
