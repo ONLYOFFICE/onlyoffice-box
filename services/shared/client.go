@@ -14,8 +14,8 @@ import (
 )
 
 var (
-	_ErrCouldNotCreatePublicURL = errors.New("could not generate a new public url")
-	_ErrCouldNotUploadFile      = errors.New("could not upload a new file version")
+	ErrCouldNotCreatePublicURL = errors.New("could not generate a new public url")
+	ErrCouldNotUploadFile      = errors.New("could not upload a new file version")
 )
 
 type BoxAPI interface {
@@ -117,7 +117,7 @@ func (c boxAPIClient) GetFileInfo(
 		SetAuthToken(token).
 		SetResult(&file).
 		SetQueryParams(map[string]string{
-			"fields": "id,name,description,extension,modified_at,file_version,version_number,parent",
+			"fields": "id,name,description,extension,modified_at,file_version,version_number,parent,permissions",
 		}).
 		SetPathParams(map[string]string{
 			"fileID": fileID,
@@ -141,7 +141,7 @@ func (c boxAPIClient) GetFilePublicUrl(ctx context.Context, token, fileID string
 	}
 
 	if resp.Header().Get("Location") == "" {
-		return "", _ErrCouldNotCreatePublicURL
+		return "", ErrCouldNotCreatePublicURL
 	}
 
 	return resp.Header().Get("Location"), nil
@@ -164,7 +164,7 @@ func (c boxAPIClient) UploadFile(
 	}
 
 	if resp.StatusCode() != http.StatusCreated {
-		return _ErrCouldNotUploadFile
+		return ErrCouldNotUploadFile
 	}
 
 	return nil
@@ -195,7 +195,7 @@ func (c boxAPIClient) CreateFile(
 	}
 
 	if len(resp.Entries) == 0 {
-		return resp, _ErrCouldNotUploadFile
+		return resp, ErrCouldNotUploadFile
 	}
 
 	return resp, nil

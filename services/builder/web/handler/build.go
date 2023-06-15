@@ -179,10 +179,10 @@ func (c ConfigHandler) processConfig(user response.UserResponse, req request.Box
 
 		config.Document.FileType = file.Extension
 		config.Document.Permissions = response.Permissions{
-			Edit:                 c.fileUtil.IsExtensionEditable(file.Extension) || req.ForceEdit,
-			Comment:              true,
-			Download:             true,
-			Print:                false,
+			Edit:                 file.Permissions.CanUpload && (c.fileUtil.IsExtensionEditable(file.Extension) || req.ForceEdit),
+			Comment:              file.Permissions.CanComment,
+			Download:             file.Permissions.CanDownload,
+			Print:                file.Permissions.CanDownload,
 			Review:               false,
 			Copy:                 true,
 			ModifyContentControl: true,
