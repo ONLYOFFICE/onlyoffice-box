@@ -98,12 +98,12 @@ func (s *BoxHTTPService) InitializeRoutes() {
 		})
 
 		r.Route("/oauth", func(cr chi.Router) {
-			cr.Get("/auth", s.authController.BuildGetAuth())
+			cr.Get("/install", s.authController.BuildGetAuth())
 			cr.Get("/redirect", s.authController.BuildGetRedirect())
 		})
 
 		r.NotFound(func(rw http.ResponseWriter, r *http.Request) {
-			http.Redirect(rw, r, "/oauth/auth", http.StatusMovedPermanently)
+			http.Redirect(rw, r, "/oauth/install", http.StatusMovedPermanently)
 		})
 	})
 }

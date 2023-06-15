@@ -85,12 +85,7 @@ func (c AuthController) BuildGetAuth() http.HandlerFunc {
 			"closeButton":  "Close",
 		}
 
-		session, err := c.store.Get(r, "onlyoffice-auth")
-		if err != nil {
-			embeddable.InstallationErrorPage.Execute(rw, errMsgs)
-			return
-		}
-
+		session, _ := c.store.Get(r, "onlyoffice-auth")
 		state, err := c.stateGenerator.GenerateState(verifier)
 		if err != nil {
 			embeddable.InstallationErrorPage.Execute(rw, errMsgs)
@@ -143,13 +138,7 @@ func (c AuthController) BuildGetRedirect() http.HandlerFunc {
 
 		c.logger.Debugf("auth state is not empty: %s", state)
 
-		session, err := c.store.Get(r, "onlyoffice-auth")
-		if err != nil {
-			rw.WriteHeader(http.StatusInternalServerError)
-			embeddable.InstallationErrorPage.Execute(rw, errMsgs)
-			return
-		}
-
+		session, _ := c.store.Get(r, "onlyoffice-auth")
 		sessState, ok := session.Values["state"].(string)
 		if !ok {
 			c.logger.Debug("can't cast session state")
