@@ -36,10 +36,7 @@ import (
 	cv "github.com/nirasan/go-oauth-pkce-code-verifier"
 	"go-micro.dev/v4/client"
 	"golang.org/x/oauth2"
-	"golang.org/x/sync/singleflight"
 )
-
-var group singleflight.Group
 
 type AuthController struct {
 	client         client.Client
@@ -142,13 +139,13 @@ func (c AuthController) BuildGetRedirect() http.HandlerFunc {
 		sessState, ok := session.Values["state"].(string)
 		if !ok {
 			c.logger.Debug("can't cast session state")
-			http.Redirect(rw, r, "/oauth/auth", http.StatusMovedPermanently)
+			http.Redirect(rw, r, "/oauth/install", http.StatusMovedPermanently)
 			return
 		}
 
 		if state != sessState {
 			c.logger.Debugf("auth state %s doesn't match %s", state, sessState)
-			http.Redirect(rw, r, "/oauth/auth", http.StatusMovedPermanently)
+			http.Redirect(rw, r, "/oauth/install", http.StatusMovedPermanently)
 			return
 		}
 
@@ -178,16 +175,18 @@ func (c AuthController) BuildGetRedirect() http.HandlerFunc {
 			return
 		}
 
-		req := c.client.NewRequest(fmt.Sprintf("%s:auth", c.config.Namespace), "UserInsertHandler.InsertUser", request.BoxUser{
-			ID:           user.ID,
-			AccessToken:  credentials.AccessToken,
-			RefreshToken: credentials.RefreshToken,
-			TokenType:    credentials.TokenType,
-			ExpiresIn:    credentials.ExpiresIn,
-		})
-
 		var resp interface{}
-		if err := c.client.Call(r.Context(), req, &resp, client.WithRetries(3)); err != nil {
+		if err := c.client.Call(
+			r.Context(),
+			c.client.NewRequest(
+				fmt.Sprintf("%s:auth", c.config.Namespace), "UserInsertHandler.InsertUser", request.BoxUser{
+					ID:           user.ID,
+					AccessToken:  credentials.AccessToken,
+					RefreshToken: credentials.RefreshToken,
+					TokenType:    credentials.TokenType,
+					ExpiresIn:    credentials.ExpiresIn,
+				},
+			), &resp, client.WithRetries(3)); err != nil {
 			c.logger.Errorf("could not insert a new user: %s", err.Error())
 			embeddable.InstallationErrorPage.Execute(rw, errMsgs)
 			return

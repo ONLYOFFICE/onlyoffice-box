@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -27,8 +26,6 @@ import (
 	"golang.org/x/oauth2"
 	"golang.org/x/sync/semaphore"
 )
-
-var _ErrSemaphoreNotAllowed = errors.New("could not acquire semaphore")
 
 type FileController struct {
 	client      client.Client
@@ -89,13 +86,13 @@ func (c FileController) BuildConvertPage() http.HandlerFunc {
 			userID,
 		), &ures); err != nil {
 			c.logger.Debugf("could not get user %s access info: %s", userID, err.Error())
-			embeddable.ErrorPage.Execute(rw, errMsg)
+			http.Redirect(rw, r, "/oauth/install", http.StatusMovedPermanently)
 			return
 		}
 
 		file, err := c.boxClient.GetFileInfo(r.Context(), ures.AccessToken, fileID)
-		if err != nil {
-			embeddable.ErrorPage.Execute(rw, errMsg)
+		if err != nil || file.ID == "" {
+			http.Redirect(rw, r, "/oauth/install", http.StatusMovedPermanently)
 			return
 		}
 
@@ -209,7 +206,7 @@ func (c FileController) BuildConvertFile() http.HandlerFunc {
 func (c FileController) convertFile(ctx context.Context, body request.ConvertRequestBody) (request.ConvertRequestBody, error) {
 	if ok := c.sem.TryAcquire(1); !ok {
 		c.logger.Errorf("could not acquire semaphore")
-		return body, _ErrSemaphoreNotAllowed
+		return body, ErrSemaphoreNotAllowed
 	}
 
 	defer c.sem.Release(1)

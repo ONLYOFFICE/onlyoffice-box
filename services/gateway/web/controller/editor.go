@@ -67,7 +67,7 @@ func (c EditorController) BuildGetEditor() http.HandlerFunc {
 				ForceEdit: state.ForceEdit,
 			}), &config, client.WithRetries(3)); err != nil {
 			c.logger.Errorf("could not build an editor config: %s", err.Error())
-			rw.WriteHeader(http.StatusInternalServerError)
+			embeddable.ErrorPage.ExecuteTemplate(rw, "error", errMsg)
 			return
 		}
 

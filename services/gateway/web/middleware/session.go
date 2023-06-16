@@ -49,19 +49,13 @@ func NewSessionMiddleware(
 func (m SessionMiddleware) Protect(next http.Handler) http.Handler {
 	fn := func(rw http.ResponseWriter, r *http.Request) {
 		userID := r.URL.Query().Get("user")
-		session, err := m.store.Get(r, "onlyoffice-auth")
-		if err != nil {
-			m.logger.Errorf("could not get session for user %s: %s", userID, err.Error())
-			http.Redirect(rw, r, "/oauth/auth", http.StatusMovedPermanently)
-			return
-		}
-
+		session, _ := m.store.Get(r, "onlyoffice-auth")
 		val, ok := session.Values["token"].(string)
 		if !ok {
 			m.logger.Debug("could not cast token to string")
 			session.Options.MaxAge = -1
 			session.Save(r, rw)
-			http.Redirect(rw, r, "/oauth/auth", http.StatusMovedPermanently)
+			http.Redirect(rw, r, "/oauth/install", http.StatusMovedPermanently)
 			return
 		}
 
@@ -75,7 +69,7 @@ func (m SessionMiddleware) Protect(next http.Handler) http.Handler {
 			m.logger.Debugf("could not verify session token: %s", err.Error())
 			session.Options.MaxAge = -1
 			session.Save(r, rw)
-			http.Redirect(rw, r, "/oauth/auth", http.StatusMovedPermanently)
+			http.Redirect(rw, r, "/oauth/install", http.StatusMovedPermanently)
 			return
 		}
 
@@ -83,7 +77,7 @@ func (m SessionMiddleware) Protect(next http.Handler) http.Handler {
 			m.logger.Debugf("user %s doesn't match state user %s", token["jti"], userID)
 			session.Options.MaxAge = -1
 			session.Save(r, rw)
-			http.Redirect(rw, r, "/oauth/auth", http.StatusMovedPermanently)
+			http.Redirect(rw, r, "/oauth/install", http.StatusMovedPermanently)
 			return
 		}
 
