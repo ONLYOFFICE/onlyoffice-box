@@ -104,7 +104,7 @@
         style="position: relative; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; flex-direction: column;">
         {{template "spinner"}}
       </div>
-      <button class="container_button" onclick="window.close()" style="margin-top: 2rem; width: 110px;">
+      <button class="container_button" onclick="window.parent.close()" style="margin-top: 2rem; width: 110px;">
         <p class="buttontext">
           {{.cancelButton}}
         </p>
