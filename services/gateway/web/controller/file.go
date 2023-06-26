@@ -32,6 +32,7 @@ type FileController struct {
 	boxClient   shared.BoxAPI
 	jwtManager  crypto.JwtManager
 	fileUtil    onlyoffice.OnlyofficeFileUtility
+	hasher      crypto.Hasher
 	credentials *oauth2.Config
 	server      *config.ServerConfig
 	onlyoffice  *shared.OnlyofficeConfig
@@ -41,7 +42,7 @@ type FileController struct {
 
 func NewFileController(
 	client client.Client, boxClient shared.BoxAPI, jwtManager crypto.JwtManager,
-	credentials *oauth2.Config, fileUtil onlyoffice.OnlyofficeFileUtility,
+	credentials *oauth2.Config, fileUtil onlyoffice.OnlyofficeFileUtility, hasher crypto.Hasher,
 	server *config.ServerConfig, onlyoffice *shared.OnlyofficeConfig, logger log.Logger,
 ) FileController {
 	return FileController{
@@ -49,6 +50,7 @@ func NewFileController(
 		boxClient:   boxClient,
 		jwtManager:  jwtManager,
 		fileUtil:    fileUtil,
+		hasher:      hasher,
 		credentials: credentials,
 		server:      server,
 		onlyoffice:  onlyoffice,
@@ -263,6 +265,7 @@ func (c FileController) convertFile(ctx context.Context, body request.ConvertReq
 
 	creq := request.ConvertAPIRequest{
 		Async:      false,
+		Key:        string(c.hasher.Hash(fileInfo.ModifiedAt + fileInfo.ID)),
 		Filetype:   fType,
 		Outputtype: "ooxml",
 		URL:        durl,
