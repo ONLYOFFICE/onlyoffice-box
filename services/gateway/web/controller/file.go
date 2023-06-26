@@ -109,7 +109,7 @@ func (c FileController) BuildConvertPage() http.HandlerFunc {
 
 		embeddable.ConvertPage.Execute(rw, map[string]interface{}{
 			"CSRF":     csrf.Token(r),
-			"OOXML":    c.fileUtil.IsExtensionOOXMLConvertable(file.Extension),
+			"OOXML":    c.fileUtil.IsExtensionOOXMLConvertable(file.Extension) || c.fileUtil.IsExtensionLossEditable(file.Extension),
 			"LossEdit": c.fileUtil.IsExtensionLossEditable(file.Extension),
 			"User":     userID,
 			"File":     fileID,
