@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -27,6 +28,8 @@ import (
 	"golang.org/x/oauth2"
 	"golang.org/x/sync/semaphore"
 )
+
+var _ErrCsvIsNotSupported = errors.New("csv conversion is not supported")
 
 type FileController struct {
 	client      client.Client
@@ -121,7 +124,7 @@ func (c FileController) BuildConvertPage() http.HandlerFunc {
 
 		embeddable.ConvertPage.Execute(rw, map[string]interface{}{
 			"CSRF":     csrf.Token(r),
-			"OOXML":    c.fileUtil.IsExtensionOOXMLConvertable(file.Extension) || c.fileUtil.IsExtensionLossEditable(file.Extension),
+			"OOXML":    file.Extension != "csv" && (c.fileUtil.IsExtensionOOXMLConvertable(file.Extension) || c.fileUtil.IsExtensionLossEditable(file.Extension)),
 			"LossEdit": c.fileUtil.IsExtensionLossEditable(file.Extension),
 			"User":     userID,
 			"File":     fileID,
@@ -267,6 +270,10 @@ func (c FileController) convertFile(ctx context.Context, body request.ConvertReq
 
 	fileInfo := <-fInfoChan
 	durl := <-urlChan
+
+	if fileInfo.Extension == "csv" {
+		return body, _ErrCsvIsNotSupported
+	}
 
 	var cresp response.ConvertResponse
 	fType, err := c.fileUtil.GetFileType(fileInfo.Extension)
