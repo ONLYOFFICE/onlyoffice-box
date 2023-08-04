@@ -45,8 +45,10 @@ type AuthController struct {
 	store          *sessions.CookieStore
 	stateGenerator crypto.StateGenerator
 	config         *config.ServerConfig
+	onlyoffice     *shared.OnlyofficeConfig
 	oauth          *oauth2.Config
 	logger         log.Logger
+	session        *sessions.CookieStore
 }
 
 func NewAuthController(
@@ -56,8 +58,10 @@ func NewAuthController(
 	store *sessions.CookieStore,
 	stateGenerator crypto.StateGenerator,
 	config *config.ServerConfig,
+	onlyoffice *shared.OnlyofficeConfig,
 	oauth *oauth2.Config,
 	logger log.Logger,
+	session *sessions.CookieStore,
 ) AuthController {
 	return AuthController{
 		client:         client,
@@ -66,9 +70,25 @@ func NewAuthController(
 		store:          store,
 		stateGenerator: stateGenerator,
 		config:         config,
+		onlyoffice:     onlyoffice,
 		oauth:          oauth,
 		logger:         logger,
+		session:        session,
 	}
+}
+
+func (c AuthController) getRedirectURL(rw http.ResponseWriter, r *http.Request) string {
+	session, _ := c.session.Get(r, "url")
+	url := "https://app.box.com"
+
+	if val, ok := session.Values["redirect"].(string); ok {
+		url = val
+	}
+
+	session.Options.MaxAge = -1
+	session.Save(r, rw)
+
+	return url
 }
 
 func (c AuthController) BuildGetAuth() http.HandlerFunc {
@@ -212,6 +232,6 @@ func (c AuthController) BuildGetRedirect() http.HandlerFunc {
 			return
 		}
 
-		http.Redirect(rw, r, "https://app.box.com", http.StatusMovedPermanently)
+		http.Redirect(rw, r, c.getRedirectURL(rw, r), http.StatusMovedPermanently)
 	}
 }

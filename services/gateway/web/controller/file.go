@@ -20,6 +20,7 @@ import (
 	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/onlyoffice"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/csrf"
+	"github.com/gorilla/sessions"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"go-micro.dev/v4/client"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -37,13 +38,15 @@ type FileController struct {
 	server      *config.ServerConfig
 	onlyoffice  *shared.OnlyofficeConfig
 	sem         *semaphore.Weighted
+	session     *sessions.CookieStore
 	logger      log.Logger
 }
 
 func NewFileController(
 	client client.Client, boxClient shared.BoxAPI, jwtManager crypto.JwtManager,
 	credentials *oauth2.Config, fileUtil onlyoffice.OnlyofficeFileUtility, hasher crypto.Hasher,
-	server *config.ServerConfig, onlyoffice *shared.OnlyofficeConfig, logger log.Logger,
+	server *config.ServerConfig, onlyoffice *shared.OnlyofficeConfig,
+	session *sessions.CookieStore, logger log.Logger,
 ) FileController {
 	return FileController{
 		client:      client,
@@ -55,8 +58,15 @@ func NewFileController(
 		server:      server,
 		onlyoffice:  onlyoffice,
 		sem:         semaphore.NewWeighted(int64(onlyoffice.Onlyoffice.Builder.AllowedDownloads)),
+		session:     session,
 		logger:      logger,
 	}
+}
+
+func (c FileController) saveRedirectURL(rw http.ResponseWriter, r *http.Request) {
+	session, _ := c.session.Get(r, "url")
+	session.Values["redirect"] = c.onlyoffice.Onlyoffice.Builder.GatewayURL + r.URL.String()
+	session.Save(r, rw)
 }
 
 func (c FileController) BuildConvertPage() http.HandlerFunc {
@@ -88,12 +98,14 @@ func (c FileController) BuildConvertPage() http.HandlerFunc {
 			userID,
 		), &ures); err != nil {
 			c.logger.Debugf("could not get user %s access info: %s", userID, err.Error())
+			c.saveRedirectURL(rw, r)
 			http.Redirect(rw, r, "/oauth/install", http.StatusMovedPermanently)
 			return
 		}
 
 		file, err := c.boxClient.GetFileInfo(r.Context(), ures.AccessToken, fileID)
 		if err != nil || file.ID == "" {
+			c.saveRedirectURL(rw, r)
 			http.Redirect(rw, r, "/oauth/install", http.StatusMovedPermanently)
 			return
 		}
