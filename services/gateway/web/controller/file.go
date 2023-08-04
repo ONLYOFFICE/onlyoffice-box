@@ -110,7 +110,7 @@ func (c FileController) BuildConvertPage() http.HandlerFunc {
 			return
 		}
 
-		if c.fileUtil.IsExtensionEditable(file.Extension) || c.fileUtil.IsExtensionViewOnly(file.Extension) {
+		if !file.Permissions.CanUpload || c.fileUtil.IsExtensionEditable(file.Extension) || c.fileUtil.IsExtensionViewOnly(file.Extension) {
 			http.Redirect(rw, r, fmt.Sprintf("/editor?state=%s&user=%s", url.QueryEscape(string(request.ConvertRequestBody{
 				Action: "edit",
 				UserID: ures.ID,
