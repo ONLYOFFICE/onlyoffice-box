@@ -32,6 +32,7 @@ import (
 	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/crypto"
 	plog "github.com/ONLYOFFICE/onlyoffice-integration-adapters/log"
 	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/onlyoffice"
+	"github.com/google/uuid"
 	"github.com/mileusna/useragent"
 	"go-micro.dev/v4/client"
 	"golang.org/x/sync/singleflight"
@@ -188,6 +189,11 @@ func (c ConfigHandler) processConfig(user response.UserResponse, req request.Box
 			ModifyContentControl: true,
 			ModifyFilter:         true,
 		}
+
+		if !config.Document.Permissions.Edit {
+			config.Document.Key = uuid.NewString()
+		}
+
 		config.DocumentType = fileType
 	}
 
