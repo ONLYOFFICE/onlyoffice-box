@@ -322,10 +322,18 @@ func (c FileController) convertFile(ctx context.Context, body request.ConvertReq
 		return body, err
 	}
 
+	folder := fileInfo.Parent.ID
+	if fileInfo.CreatedBy.ID != body.UserID {
+		folder = "0" // Root folder
+	}
+
 	defer fresp.Body.Close()
 	nresp, err := c.boxClient.CreateFile(
-		ctx, fmt.Sprintf("%s.%s", c.fileUtil.GetFilenameWithoutExtension(fileInfo.Name), cresp.FileType),
-		fileInfo.Parent.ID, ures.AccessToken, fresp.Body,
+		ctx, fmt.Sprintf("%s.%s",
+			c.fileUtil.GetFilenameWithoutExtension(fileInfo.Name),
+			cresp.FileType,
+		),
+		folder, ures.AccessToken, fresp.Body,
 	)
 
 	if err != nil {

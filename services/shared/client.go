@@ -117,7 +117,7 @@ func (c boxAPIClient) GetFileInfo(
 		SetAuthToken(token).
 		SetResult(&file).
 		SetQueryParams(map[string]string{
-			"fields": "id,name,description,extension,modified_at,file_version,version_number,parent,permissions",
+			"fields": "id,name,description,extension,modified_at,file_version,version_number,parent,permissions,created_by",
 		}).
 		SetPathParams(map[string]string{
 			"fileID": fileID,

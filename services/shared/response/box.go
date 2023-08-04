@@ -26,15 +26,16 @@ func (c BoxCredentialsResponse) ToJSON() []byte {
 }
 
 type BoxFileResponse struct {
-	ID            string         `json:"id"`
-	Name          string         `json:"name"`
-	Description   string         `json:"description"`
-	Extension     string         `json:"extension"`
-	ModifiedAt    string         `json:"modified_at"`
-	FileVersion   BoxVersion     `json:"file_version"`
-	VersionNumber string         `json:"version_number"`
-	Parent        BoxParent      `json:"parent"`
-	Permissions   BoxPermissions `json:"permissions"`
+	ID            string          `json:"id"`
+	Name          string          `json:"name"`
+	Description   string          `json:"description"`
+	Extension     string          `json:"extension"`
+	ModifiedAt    string          `json:"modified_at"`
+	FileVersion   BoxVersion      `json:"file_version"`
+	VersionNumber string          `json:"version_number"`
+	Parent        BoxParent       `json:"parent"`
+	Permissions   BoxPermissions  `json:"permissions"`
+	CreatedBy     BoxUserResponse `json:"created_by"`
 }
 
 func (f BoxFileResponse) ToJSON() []byte {
