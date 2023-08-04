@@ -1,6 +1,6 @@
 namespace: "box"
 name: "gateway"
-version: 0
+version: "0.0.1"
 address: ":4044"
 repl_address: ":9999"
 debug: false
