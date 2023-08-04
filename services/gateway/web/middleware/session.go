@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/ONLYOFFICE/onlyoffice-box/services/shared"
 	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/crypto"
 	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/log"
 	"github.com/golang-jwt/jwt/v5"
@@ -29,6 +30,7 @@ type SessionMiddleware struct {
 	jwtManager  crypto.JwtManager
 	store       *sessions.CookieStore
 	credentials *oauth2.Config
+	onlyoffice  *shared.OnlyofficeConfig
 	logger      log.Logger
 }
 
@@ -36,14 +38,22 @@ func NewSessionMiddleware(
 	jwtManager crypto.JwtManager,
 	store *sessions.CookieStore,
 	credentials *oauth2.Config,
+	onlyoffice *shared.OnlyofficeConfig,
 	logger log.Logger,
 ) SessionMiddleware {
 	return SessionMiddleware{
 		jwtManager:  jwtManager,
 		store:       store,
 		credentials: credentials,
+		onlyoffice:  onlyoffice,
 		logger:      logger,
 	}
+}
+
+func (m SessionMiddleware) saveRedirectURL(rw http.ResponseWriter, r *http.Request) {
+	session, _ := m.store.Get(r, "url")
+	session.Values["redirect"] = m.onlyoffice.Onlyoffice.Builder.GatewayURL + r.URL.String()
+	session.Save(r, rw)
 }
 
 func (m SessionMiddleware) Protect(next http.Handler) http.Handler {
@@ -55,6 +65,7 @@ func (m SessionMiddleware) Protect(next http.Handler) http.Handler {
 			m.logger.Debug("could not cast token to string")
 			session.Options.MaxAge = -1
 			session.Save(r, rw)
+			m.saveRedirectURL(rw, r)
 			http.Redirect(rw, r, "/oauth/install", http.StatusMovedPermanently)
 			return
 		}
@@ -69,6 +80,7 @@ func (m SessionMiddleware) Protect(next http.Handler) http.Handler {
 			m.logger.Debugf("could not verify session token: %s", err.Error())
 			session.Options.MaxAge = -1
 			session.Save(r, rw)
+			m.saveRedirectURL(rw, r)
 			http.Redirect(rw, r, "/oauth/install", http.StatusMovedPermanently)
 			return
 		}
@@ -77,6 +89,7 @@ func (m SessionMiddleware) Protect(next http.Handler) http.Handler {
 			m.logger.Debugf("user %s doesn't match state user %s", token["jti"], userID)
 			session.Options.MaxAge = -1
 			session.Save(r, rw)
+			m.saveRedirectURL(rw, r)
 			http.Redirect(rw, r, "/oauth/install", http.StatusMovedPermanently)
 			return
 		}
