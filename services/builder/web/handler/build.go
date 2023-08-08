@@ -188,6 +188,7 @@ func (c ConfigHandler) processConfig(user response.UserResponse, req request.Box
 			Copy:                 true,
 			ModifyContentControl: true,
 			ModifyFilter:         true,
+			FillForms:            c.fileUtil.IsExtensionEditable(file.Extension),
 		}
 
 		if !config.Document.Permissions.Edit {
