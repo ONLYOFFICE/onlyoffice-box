@@ -1,0 +1,16 @@
+﻿{
+    "errorMain": "申し訳ありませんが、このドキュメントを開くことができません",
+    "errorSubtext": "もう一度お試しください",
+    "reloadButton": "再起動",
+    "cancelButton": "キャンセル",
+    "openButton": "開く",
+    "dataRestrictions": "フォーマットの制限により、元のファイルへの保存時にデータが失われる可能性があります",
+    "moreInfo": "さらに詳しく：",
+    "openEditing": "ファイルを編集するために開く",
+    "editCopy": "元のファイルではなく、ファイルのコピーのみを編集する",
+    "createOOXML": "OOXMLファイルのコピーを作成する",
+    "openView": "ファイルを閲覧のみで開く",
+    "selectAction": "アクションを選択してください：",
+    "cannotOpen": "このファイルタイプは正しく開くことができません。",
+    "openOnlyoffice": "ONLYOFFICEで開く"
+}
