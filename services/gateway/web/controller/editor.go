@@ -12,6 +12,7 @@ import (
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared/response"
 	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/config"
 	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/log"
+	"github.com/gorilla/sessions"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"go-micro.dev/v4/client"
 )
@@ -19,26 +20,36 @@ import (
 type EditorController struct {
 	client client.Client
 	server *config.ServerConfig
+	store  *sessions.CookieStore
 	logger log.Logger
 }
 
 func NewEditorController(
 	client client.Client,
 	server *config.ServerConfig,
+	store *sessions.CookieStore,
 	logger log.Logger,
 ) EditorController {
 	return EditorController{
 		client: client,
 		server: server,
+		store:  store,
 		logger: logger,
 	}
 }
 
 func (c EditorController) BuildGetEditor() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		rw.Header().Set("Content-Type", "text/html")
 		var state request.ConvertRequestBody
-		loc := i18n.NewLocalizer(embeddable.Bundle, r.Header.Get("Locale"))
+		session, err := c.store.Get(r, "onlyoffice-auth")
+		lang := "en"
+		if err == nil {
+			if ln, ok := session.Values["locale"].(string); ok {
+				lang = ln
+			}
+		}
+
+		loc := i18n.NewLocalizer(embeddable.Bundle, lang)
 		errMsg := map[string]interface{}{
 			"errorMain": loc.MustLocalize(&i18n.LocalizeConfig{
 				MessageID: "errorMain",
@@ -71,6 +82,7 @@ func (c EditorController) BuildGetEditor() http.HandlerFunc {
 			return
 		}
 
+		rw.Header().Set("Content-Type", "text/html")
 		embeddable.EditorPage.Execute(rw, map[string]interface{}{
 			"apijs":   fmt.Sprintf("%s/web-apps/apps/api/documents/api.js", config.ServerURL),
 			"config":  string(config.ToJSON()),

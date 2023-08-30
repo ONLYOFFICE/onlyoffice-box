@@ -41,7 +41,7 @@ type FileController struct {
 	server      *config.ServerConfig
 	onlyoffice  *shared.OnlyofficeConfig
 	sem         *semaphore.Weighted
-	session     *sessions.CookieStore
+	store       *sessions.CookieStore
 	logger      log.Logger
 }
 
@@ -49,7 +49,7 @@ func NewFileController(
 	client client.Client, boxClient shared.BoxAPI, jwtManager crypto.JwtManager,
 	credentials *oauth2.Config, fileUtil onlyoffice.OnlyofficeFileUtility, hasher crypto.Hasher,
 	server *config.ServerConfig, onlyoffice *shared.OnlyofficeConfig,
-	session *sessions.CookieStore, logger log.Logger,
+	store *sessions.CookieStore, logger log.Logger,
 ) FileController {
 	return FileController{
 		client:      client,
@@ -61,23 +61,22 @@ func NewFileController(
 		server:      server,
 		onlyoffice:  onlyoffice,
 		sem:         semaphore.NewWeighted(int64(onlyoffice.Onlyoffice.Builder.AllowedDownloads)),
-		session:     session,
+		store:       store,
 		logger:      logger,
 	}
 }
 
 func (c FileController) saveRedirectURL(rw http.ResponseWriter, r *http.Request) {
-	session, _ := c.session.Get(r, "url")
+	session, _ := c.store.Get(r, "url")
 	session.Values["redirect"] = c.onlyoffice.Onlyoffice.Builder.GatewayURL + r.URL.String()
 	session.Save(r, rw)
 }
 
 func (c FileController) BuildConvertPage() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		rw.Header().Set("Content-Type", "text/html")
 		query := r.URL.Query()
 		fileID, userID := query.Get("file"), query.Get("user")
-		loc := i18n.NewLocalizer(embeddable.Bundle, r.Header.Get("Locale"))
+		loc := i18n.NewLocalizer(embeddable.Bundle, "en")
 		errMsg := map[string]interface{}{
 			"errorMain": loc.MustLocalize(&i18n.LocalizeConfig{
 				MessageID: "errorMain",
@@ -106,13 +105,52 @@ func (c FileController) BuildConvertPage() http.HandlerFunc {
 			return
 		}
 
-		file, err := c.boxClient.GetFileInfo(r.Context(), ures.AccessToken, fileID)
-		if err != nil || file.ID == "" {
+		var wg sync.WaitGroup
+		wg.Add(2)
+		errChan := make(chan error, 2)
+		userChan := make(chan response.BoxUserResponse, 1)
+		fileChan := make(chan response.BoxFileResponse, 1)
+
+		go func() {
+			defer wg.Done()
+			ures, err := c.boxClient.GetMe(r.Context(), ures.AccessToken)
+			if err != nil {
+				errChan <- err
+				return
+			}
+			userChan <- ures
+		}()
+
+		go func() {
+			defer wg.Done()
+			fres, err := c.boxClient.GetFileInfo(r.Context(), ures.AccessToken, fileID)
+			if err != nil {
+				errChan <- err
+				return
+			}
+			fileChan <- fres
+		}()
+
+		wg.Wait()
+
+		select {
+		case <-errChan:
 			c.saveRedirectURL(rw, r)
 			http.Redirect(rw, r, "/oauth/install", http.StatusMovedPermanently)
 			return
+		default:
 		}
 
+		file := <-fileChan
+		user := <-userChan
+
+		session, err := c.store.Get(r, "onlyoffice-auth")
+		if err == nil {
+			session.Values["locale"] = user.Language
+			session.Save(r, rw)
+		}
+
+		loc = i18n.NewLocalizer(embeddable.Bundle, user.Language)
 		if !file.Permissions.CanUpload || c.fileUtil.IsExtensionEditable(file.Extension) || c.fileUtil.IsExtensionViewOnly(file.Extension) {
 			http.Redirect(rw, r, fmt.Sprintf("/editor?state=%s&user=%s", url.QueryEscape(string(request.ConvertRequestBody{
 				Action: "edit",
@@ -122,6 +160,7 @@ func (c FileController) BuildConvertPage() http.HandlerFunc {
 			return
 		}
 
+		rw.Header().Set("Content-Type", "text/html")
 		embeddable.ConvertPage.Execute(rw, map[string]interface{}{
 			"CSRF":     csrf.Token(r),
 			"OOXML":    file.Extension != "csv" && (c.fileUtil.IsExtensionOOXMLConvertable(file.Extension) || c.fileUtil.IsExtensionLossEditable(file.Extension)),

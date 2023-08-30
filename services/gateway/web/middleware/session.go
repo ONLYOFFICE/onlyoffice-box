@@ -70,11 +70,6 @@ func (m SessionMiddleware) Protect(next http.Handler) http.Handler {
 			return
 		}
 
-		r.Header.Set("Locale", "en")
-		if loc, ok := session.Values["locale"].(string); ok {
-			r.Header.Set("Locale", loc)
-		}
-
 		var token jwt.MapClaims
 		if err := m.jwtManager.Verify(m.credentials.ClientSecret, val, &token); err != nil {
 			m.logger.Debugf("could not verify session token: %s", err.Error())
