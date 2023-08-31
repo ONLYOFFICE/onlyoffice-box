@@ -277,6 +277,7 @@ func (c FileController) BuildConvertFile() http.HandlerFunc {
 	}
 }
 
+// TODO: Use workers for async conversion
 func (c FileController) convertFile(ctx context.Context, body request.ConvertRequestBody) (request.ConvertRequestBody, error) {
 	if ok := c.sem.TryAcquire(1); !ok {
 		c.logger.Errorf("could not acquire semaphore")
@@ -393,8 +394,9 @@ func (c FileController) convertFile(ctx context.Context, body request.ConvertReq
 
 	defer fresp.Body.Close()
 	nresp, err := c.boxClient.CreateFile(
-		ctx, fmt.Sprintf("%s.%s",
+		ctx, fmt.Sprintf("%s (%s).%s",
 			c.fileUtil.GetFilenameWithoutExtension(fileInfo.Name),
+			time.Now().Format("2006-01-02 15:04:05.000"),
 			cresp.FileType,
 		),
 		folder, ures.AccessToken, fresp.Body,
