@@ -23,13 +23,11 @@ import (
 	"errors"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/ONLYOFFICE/onlyoffice-box/services/auth/web/core/domain"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/auth/web/core/port"
 	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/crypto"
 	plog "github.com/ONLYOFFICE/onlyoffice-integration-adapters/log"
-	"github.com/mitchellh/mapstructure"
 	"go-micro.dev/v4/cache"
 	"golang.org/x/oauth2"
 )
@@ -133,22 +131,9 @@ func (s userService) GetUser(ctx context.Context, uid string) (domain.UserAccess
 	atokenChan := make(chan string, 1)
 	rtokenChan := make(chan string, 1)
 
-	var user domain.UserAccess
-	var err error
-	if res, _, err := s.cache.Get(ctx, id); err == nil && res != nil {
-		s.logger.Debugf("found user %s in the cache", id)
-		if err := mapstructure.Decode(res, &user); err != nil {
-			s.logger.Errorf("could not decode from cache: %s", err.Error())
-		}
-	}
-
-	if user.Validate() != nil {
-		user, err = s.adapter.SelectUserByID(ctx, id)
-		if err != nil {
-			return user, err
-		}
-
-		s.cache.Put(ctx, id, user, time.Duration((user.ExpiresAt-time.Now().UnixMilli())*1e6/6))
+	user, err := s.adapter.SelectUserByID(ctx, id)
+	if err != nil {
+		return user, err
 	}
 
 	s.logger.Debugf("found a user: %v", user)
@@ -256,12 +241,6 @@ func (s userService) DeleteUser(ctx context.Context, uid string) error {
 		return &InvalidServiceParameterError{
 			Name:   "UID",
 			Reason: "Should not be blank",
-		}
-	}
-
-	if _, _, err := s.cache.Get(ctx, uid); err == nil {
-		if err := s.cache.Delete(ctx, uid); err != nil {
-			return err
 		}
 	}
 

@@ -32,6 +32,7 @@ import (
 )
 
 var (
+	ErrEmptyResponse           = errors.New("got an empty response")
 	ErrCouldNotCreatePublicURL = errors.New("could not generate a new public url")
 	ErrCouldNotUploadFile      = errors.New("could not upload a new file version")
 )
@@ -124,6 +125,10 @@ func (c boxAPIClient) GetMe(ctx context.Context, token string) (response.BoxUser
 		return user, err
 	}
 
+	if user.ID == "" {
+		return user, ErrEmptyResponse
+	}
+
 	return user, nil
 }
 
@@ -142,6 +147,10 @@ func (c boxAPIClient) GetFileInfo(
 		}).
 		Get("https://api.box.com/2.0/files/{fileID}"); err != nil {
 		return file, err
+	}
+
+	if file.ID == "" {
+		return file, ErrEmptyResponse
 	}
 
 	return file, nil
