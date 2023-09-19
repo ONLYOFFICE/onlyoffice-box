@@ -1,6 +1,6 @@
 namespace: "box"
 name: "builder"
-version: 0
+version: "0.0.1"
 address: ":6260"
 repl_address: ":7979"
 debug: false

@@ -20,12 +20,13 @@ package handler
 
 import (
 	"context"
+	"fmt"
 	"time"
 
-	"github.com/ONLYOFFICE/onlyoffice-box/pkg/log"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/auth/web/core/domain"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/auth/web/core/port"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared"
+	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/log"
 	"go-micro.dev/v4/client"
 	"golang.org/x/oauth2"
 	"golang.org/x/sync/singleflight"
@@ -58,14 +59,14 @@ func NewUserSelectHandler(
 }
 
 func (u UserSelectHandler) GetUser(ctx context.Context, uid *string, res *domain.UserAccess) error {
-	user, err, _ := group.Do(*uid, func() (interface{}, error) {
+	user, err, _ := group.Do(fmt.Sprintf("select-%s", *uid), func() (interface{}, error) {
 		user, err := u.service.GetUser(ctx, *uid)
 		if err != nil {
 			u.logger.Debugf("could not get user with id: %s. Reason: %s", *uid, err.Error())
 			return nil, err
 		}
 
-		if user.ExpiresAt-2500 <= time.Now().UnixMilli() {
+		if user.ExpiresAt-12000 <= time.Now().UnixMilli() {
 			credentials, err := u.boxClient.
 				RefreshAuthCredentials(ctx, user.RefreshToken, u.credentials.ClientID, u.credentials.ClientSecret)
 			if err != nil {

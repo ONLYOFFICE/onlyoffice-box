@@ -21,53 +21,122 @@ package controller
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
-	"github.com/ONLYOFFICE/onlyoffice-box/pkg/config"
-	"github.com/ONLYOFFICE/onlyoffice-box/pkg/crypto"
-	plog "github.com/ONLYOFFICE/onlyoffice-box/pkg/log"
-	"github.com/ONLYOFFICE/onlyoffice-box/pkg/onlyoffice"
-	"github.com/ONLYOFFICE/onlyoffice-box/pkg/worker"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared/request"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared/response"
+	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/config"
+	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/crypto"
+	plog "github.com/ONLYOFFICE/onlyoffice-integration-adapters/log"
+	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/onlyoffice"
 	"go-micro.dev/v4/client"
-	"golang.org/x/oauth2"
+	"go-micro.dev/v4/util/backoff"
 )
 
 type CallbackController struct {
-	client      client.Client
-	jwtManger   crypto.JwtManager
-	fileUtil    onlyoffice.OnlyofficeFileUtility
-	server      *config.ServerConfig
-	credentials *oauth2.Config
-	onlyoffice  *shared.OnlyofficeConfig
-	logger      plog.Logger
+	client     client.Client
+	jwtManger  crypto.JwtManager
+	fileUtil   onlyoffice.OnlyofficeFileUtility
+	boxAPI     shared.BoxAPI
+	server     *config.ServerConfig
+	onlyoffice *shared.OnlyofficeConfig
+	logger     plog.Logger
 }
 
 func NewCallbackController(
 	client client.Client,
 	jwtManger crypto.JwtManager,
 	fileUtil onlyoffice.OnlyofficeFileUtility,
+	boxAPI shared.BoxAPI,
 	server *config.ServerConfig,
-	credentials *oauth2.Config,
 	onlyoffice *shared.OnlyofficeConfig,
 	logger plog.Logger,
 ) CallbackController {
 	return CallbackController{
-		client:      client,
-		jwtManger:   jwtManger,
-		fileUtil:    fileUtil,
-		server:      server,
-		credentials: credentials,
-		onlyoffice:  onlyoffice,
-		logger:      logger,
+		client:     client,
+		jwtManger:  jwtManger,
+		fileUtil:   fileUtil,
+		boxAPI:     boxAPI,
+		server:     server,
+		onlyoffice: onlyoffice,
+		logger:     logger,
 	}
 }
 
-func (c CallbackController) BuildPostHandleCallback(enqueuer worker.BackgroundEnqueuer) http.HandlerFunc {
+func (c CallbackController) uploadFile(user, url, fileID, filename string) error {
+	ctx, cancel := context.WithTimeout(
+		context.Background(), time.Duration(
+			c.onlyoffice.Onlyoffice.Callback.UploadTimeout,
+		)*time.Second,
+	)
+
+	defer cancel()
+
+	c.logger.Debugf("user %s is uploading a new file", user)
+	var wg sync.WaitGroup
+	wg.Add(2)
+	errChan := make(chan error, 2)
+	userChan := make(chan response.UserResponse, 1)
+	fileChan := make(chan io.ReadCloser, 1)
+
+	go func() {
+		defer wg.Done()
+		req := c.client.NewRequest(
+			fmt.Sprintf("%s:auth", c.server.Namespace), "UserSelectHandler.GetUser", user,
+		)
+
+		var ures response.UserResponse
+		if err := c.client.Call(ctx, req, &ures, client.WithRetries(3), client.WithBackoff(func(ctx context.Context, req client.Request, attempts int) (time.Duration, error) {
+			return backoff.Do(attempts), nil
+		})); err != nil {
+			c.logger.Errorf("could not get user credentials: %s", err.Error())
+			errChan <- err
+			return
+		}
+
+		userChan <- ures
+	}()
+
+	go func() {
+		defer wg.Done()
+		resp, err := http.Get(url)
+		if err != nil {
+			c.logger.Errorf("could not download a new file: %s", err.Error())
+			errChan <- err
+			return
+		}
+
+		fileChan <- resp.Body
+	}()
+
+	select {
+	case err := <-errChan:
+		return err
+	case <-ctx.Done():
+		c.logger.Error("file upload timeout")
+		return http.ErrHandlerTimeout
+	default:
+	}
+
+	ures := <-userChan
+	body := <-fileChan
+	defer body.Close()
+
+	if err := c.boxAPI.UploadFile(ctx, filename, ures.AccessToken, fileID, body); err != nil {
+		c.logger.Errorf("could not upload file %s: %s", filename, err.Error())
+		return err
+	}
+
+	return nil
+}
+
+func (c CallbackController) BuildPostHandleCallback() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		rw.Header().Set("Content-Type", "application/json")
 
@@ -144,21 +213,15 @@ func (c CallbackController) BuildPostHandleCallback(enqueuer worker.BackgroundEn
 
 			usr := body.Users[0]
 			if usr != "" {
-				c.logger.Debugf("user %s is creating a new job", usr)
-				if err := enqueuer.EnqueueContext(tctx, "box-callback-upload", request.JobMessage{
-					UserID:      usr,
-					FileID:      fileID,
-					Filename:    name,
-					DownloadURL: body.URL,
-				}.ToJSON(), worker.WithMaxRetry(6), worker.WithTaskID(body.Key)); err != nil {
-					rw.WriteHeader(http.StatusInternalServerError)
-					c.logger.Errorf("could not enqueue a new job with key %s", body.Key)
+				if err := c.uploadFile(usr, body.URL, fileID, name); err != nil {
+					rw.WriteHeader(http.StatusBadRequest)
 					rw.Write(response.CallbackResponse{
 						Error: 1,
 					}.ToJSON())
 					return
 				}
-				c.logger.Debugf("user %s has created a new job", usr)
+
+				c.logger.Debugf("user %s has uploaded a new file", usr)
 			}
 		}
 

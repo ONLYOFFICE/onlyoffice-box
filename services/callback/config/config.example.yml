@@ -1,6 +1,6 @@
 namespace: "box"
 name: "callback"
-version: 0
+version: "0.0.1"
 address: ":5044"
 repl_address: ":3132"
 debug: false

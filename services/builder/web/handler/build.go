@@ -25,32 +25,33 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ONLYOFFICE/onlyoffice-box/pkg/config"
-	"github.com/ONLYOFFICE/onlyoffice-box/pkg/crypto"
-	plog "github.com/ONLYOFFICE/onlyoffice-box/pkg/log"
-	"github.com/ONLYOFFICE/onlyoffice-box/pkg/onlyoffice"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared/request"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared/response"
+	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/config"
+	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/crypto"
+	plog "github.com/ONLYOFFICE/onlyoffice-integration-adapters/log"
+	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/onlyoffice"
+	"github.com/google/uuid"
 	"github.com/mileusna/useragent"
 	"go-micro.dev/v4/client"
-	"golang.org/x/oauth2"
 	"golang.org/x/sync/singleflight"
 )
 
-var _ErrOperationTimeout = errors.New("operation timeout")
+var (
+	_ErrOperationTimeout = errors.New("operation timeout")
+	group                singleflight.Group
+)
 
 type ConfigHandler struct {
-	client      client.Client
-	boxClient   shared.BoxAPI
-	jwtManager  crypto.JwtManager
-	hasher      crypto.Hasher
-	fileUtil    onlyoffice.OnlyofficeFileUtility
-	server      *config.ServerConfig
-	credentials *oauth2.Config
-	onlyoffice  *shared.OnlyofficeConfig
-	logger      plog.Logger
-	group       singleflight.Group
+	client     client.Client
+	boxClient  shared.BoxAPI
+	jwtManager crypto.JwtManager
+	hasher     crypto.Hasher
+	fileUtil   onlyoffice.OnlyofficeFileUtility
+	server     *config.ServerConfig
+	onlyoffice *shared.OnlyofficeConfig
+	logger     plog.Logger
 }
 
 func NewConfigHandler(
@@ -60,20 +61,18 @@ func NewConfigHandler(
 	hasher crypto.Hasher,
 	fileUtil onlyoffice.OnlyofficeFileUtility,
 	server *config.ServerConfig,
-	credentials *oauth2.Config,
 	onlyoffice *shared.OnlyofficeConfig,
 	logger plog.Logger,
 ) ConfigHandler {
 	return ConfigHandler{
-		client:      client,
-		boxClient:   boxClient,
-		jwtManager:  jwtManager,
-		hasher:      hasher,
-		fileUtil:    fileUtil,
-		server:      server,
-		credentials: credentials,
-		onlyoffice:  onlyoffice,
-		logger:      logger,
+		client:     client,
+		boxClient:  boxClient,
+		jwtManager: jwtManager,
+		hasher:     hasher,
+		fileUtil:   fileUtil,
+		server:     server,
+		onlyoffice: onlyoffice,
+		logger:     logger,
 	}
 }
 
@@ -92,8 +91,8 @@ func (c ConfigHandler) processConfig(user response.UserResponse, req request.Box
 	var wg sync.WaitGroup
 	wg.Add(2)
 	errChan := make(chan error, 2)
-	userChan := make(chan response.BoxUser, 1)
-	fileChan := make(chan response.BoxFile, 1)
+	userChan := make(chan response.BoxUserResponse, 1)
+	fileChan := make(chan response.BoxFileResponse, 1)
 
 	go func() {
 		defer wg.Done()
@@ -147,7 +146,7 @@ func (c ConfigHandler) processConfig(user response.UserResponse, req request.Box
 	filename := c.fileUtil.EscapeFilename(file.Name)
 	config = response.BuildConfigResponse{
 		Document: response.Document{
-			Key:   string(c.hasher.Hash(file.ModifiedAt)),
+			Key:   string(c.hasher.Hash(file.ModifiedAt + file.ID)),
 			Title: filename,
 			URL:   url,
 		},
@@ -181,15 +180,21 @@ func (c ConfigHandler) processConfig(user response.UserResponse, req request.Box
 
 		config.Document.FileType = file.Extension
 		config.Document.Permissions = response.Permissions{
-			Edit:                 c.fileUtil.IsExtensionEditable(file.Extension),
-			Comment:              true,
-			Download:             true,
-			Print:                false,
+			Edit:                 file.Permissions.CanUpload && (c.fileUtil.IsExtensionEditable(file.Extension) || req.ForceEdit),
+			Comment:              file.Permissions.CanComment,
+			Download:             file.Permissions.CanDownload,
+			Print:                file.Permissions.CanDownload,
 			Review:               false,
 			Copy:                 true,
 			ModifyContentControl: true,
 			ModifyFilter:         true,
+			FillForms:            c.fileUtil.IsExtensionEditable(file.Extension),
 		}
+
+		if !config.Document.Permissions.Edit {
+			config.Document.Key = uuid.NewString()
+		}
+
 		config.DocumentType = fileType
 	}
 
@@ -206,7 +211,7 @@ func (c ConfigHandler) processConfig(user response.UserResponse, req request.Box
 func (c ConfigHandler) BuildConfig(ctx context.Context, payload request.BoxState, res *response.BuildConfigResponse) error {
 	c.logger.Debugf("processing a docs config: %s", payload.FileID)
 
-	config, err, _ := c.group.Do(fmt.Sprintf("%s:%s", payload.UserID, payload.FileID), func() (interface{}, error) {
+	config, err, _ := group.Do(fmt.Sprintf("%s:%s", payload.UserID, payload.FileID), func() (interface{}, error) {
 		req := c.client.NewRequest(
 			fmt.Sprintf("%s:auth", c.server.Namespace), "UserSelectHandler.GetUser",
 			fmt.Sprint(payload.UserID),

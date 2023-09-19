@@ -1,0 +1,25 @@
+version: '3.8'
+services:
+  gateway:
+    build:
+      context: .
+      target: gateway
+    image: onlyoffice/box-gateway:${PRODUCT_VERSION}
+
+  auth:
+    build:
+      context: .
+      target: auth
+    image: onlyoffice/box-auth:${PRODUCT_VERSION}
+
+  builder:
+    build:
+      context: .
+      target: builder
+    image: onlyoffice/box-builder:${PRODUCT_VERSION}
+
+  callback:
+    build:
+      context: .
+      target: callback
+    image: onlyoffice/box-callback:${PRODUCT_VERSION}

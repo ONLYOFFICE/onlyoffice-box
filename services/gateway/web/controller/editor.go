@@ -1,60 +1,87 @@
+/**
+ *
+ * (c) Copyright Ascensio System SIA 2023
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
 package controller
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"html/template"
 	"net/http"
-	"path"
-	"path/filepath"
-	"runtime"
 	"time"
 
-	"github.com/ONLYOFFICE/onlyoffice-box/pkg/config"
-	"github.com/ONLYOFFICE/onlyoffice-box/pkg/crypto"
-	"github.com/ONLYOFFICE/onlyoffice-box/pkg/log"
+	"github.com/ONLYOFFICE/onlyoffice-box/services/gateway/web/embeddable"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared/request"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared/response"
+	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/config"
+	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/log"
 	"github.com/gorilla/sessions"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"go-micro.dev/v4/client"
 )
 
-var (
-	_, b, _, _ = runtime.Caller(0)
-	basepath   = filepath.Dir(b)
-	editorPage = template.Must(template.ParseFiles(path.Join(basepath, "../", "templates", "editor.html")))
-)
-
 type EditorController struct {
-	client     client.Client
-	jwtManager crypto.JwtManager
-	store      *sessions.CookieStore
-	server     *config.ServerConfig
-	logger     log.Logger
+	client client.Client
+	server *config.ServerConfig
+	store  *sessions.CookieStore
+	logger log.Logger
 }
 
 func NewEditorController(
 	client client.Client,
-	jwtManager crypto.JwtManager,
 	server *config.ServerConfig,
+	store *sessions.CookieStore,
 	logger log.Logger,
 ) EditorController {
 	return EditorController{
-		client:     client,
-		jwtManager: jwtManager,
-		server:     server,
-		logger:     logger,
+		client: client,
+		server: server,
+		store:  store,
+		logger: logger,
 	}
 }
 
 func (c EditorController) BuildGetEditor() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		query := r.URL.Query()
-		fileID, userID := query.Get("file"), query.Get("user")
+		var state request.ConvertRequestBody
+		session, err := c.store.Get(r, "onlyoffice-auth")
+		lang := "en"
+		if err == nil {
+			if ln, ok := session.Values["locale"].(string); ok {
+				lang = ln
+			}
+		}
 
-		if fileID == "" || userID == "" {
-			// TODO: Render error page
-			rw.WriteHeader(http.StatusBadRequest)
+		loc := i18n.NewLocalizer(embeddable.Bundle, lang)
+		errMsg := map[string]interface{}{
+			"errorMain": loc.MustLocalize(&i18n.LocalizeConfig{
+				MessageID: "errorMain",
+			}),
+			"errorSubtext": loc.MustLocalize(&i18n.LocalizeConfig{
+				MessageID: "errorSubtext",
+			}),
+			"reloadButton": loc.MustLocalize(&i18n.LocalizeConfig{
+				MessageID: "reloadButton",
+			}),
+		}
+
+		if err := json.Unmarshal([]byte(r.URL.Query().Get("state")), &state); err != nil {
+			embeddable.ErrorPage.ExecuteTemplate(rw, "error", errMsg)
 			return
 		}
 
@@ -63,20 +90,24 @@ func (c EditorController) BuildGetEditor() http.HandlerFunc {
 		var config response.BuildConfigResponse
 		if err := c.client.Call(tctx, c.client.NewRequest(
 			fmt.Sprintf("%s:builder", c.server.Namespace), "ConfigHandler.BuildConfig", request.BoxState{
-				UserID:    userID,
-				FileID:    fileID,
+				UserID:    state.UserID,
+				FileID:    state.FileID,
 				UserAgent: r.UserAgent(),
+				ForceEdit: state.ForceEdit,
 			}), &config, client.WithRetries(3)); err != nil {
 			c.logger.Errorf("could not build an editor config: %s", err.Error())
-			rw.WriteHeader(http.StatusInternalServerError)
+			embeddable.ErrorPage.ExecuteTemplate(rw, "error", errMsg)
 			return
 		}
 
-		rw.Header().Set("Content-Security-Policy", "default-src * 'unsafe-inline' 'unsafe-eval'; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src * 'unsafe-inline'; img-src * data: blob: 'unsafe-inline'; frame-src *; style-src * 'unsafe-inline'; script-src-elem * 'unsafe-inline'")
-		editorPage.Execute(rw, map[string]interface{}{
+		rw.Header().Set("Content-Type", "text/html")
+		embeddable.EditorPage.Execute(rw, map[string]interface{}{
 			"apijs":   fmt.Sprintf("%s/web-apps/apps/api/documents/api.js", config.ServerURL),
 			"config":  string(config.ToJSON()),
 			"docType": config.DocumentType,
+			"cancelButton": loc.MustLocalize(&i18n.LocalizeConfig{
+				MessageID: "cancelButton",
+			}),
 		})
 	}
 }

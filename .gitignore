@@ -6,3 +6,5 @@ config.yml
 
 # System files
 .DS_Store
+
+build/

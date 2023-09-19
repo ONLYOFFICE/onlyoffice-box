@@ -23,13 +23,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ONLYOFFICE/onlyoffice-box/pkg/cache"
-	"github.com/ONLYOFFICE/onlyoffice-box/pkg/config"
-	"github.com/ONLYOFFICE/onlyoffice-box/pkg/log"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/auth/web/core/adapter"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/auth/web/core/domain"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/auth/web/core/service"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared"
+	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/cache"
+	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/config"
+	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/log"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/oauth2"
 )

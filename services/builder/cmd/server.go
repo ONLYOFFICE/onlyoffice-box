@@ -19,11 +19,11 @@
 package cmd
 
 import (
-	"github.com/ONLYOFFICE/onlyoffice-box/pkg"
-	"github.com/ONLYOFFICE/onlyoffice-box/pkg/service/rpc"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/builder/web"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/builder/web/handler"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared"
+	pkg "github.com/ONLYOFFICE/onlyoffice-integration-adapters"
+	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/service/rpc"
 	"github.com/urfave/cli/v2"
 )
 
@@ -38,24 +38,20 @@ func Server() *cli.Command {
 				Usage:   "sets custom configuration path",
 				Aliases: []string{"config", "conf", "c"},
 			},
-			&cli.StringFlag{
-				Name:    "environment",
-				Usage:   "sets servers environment (development, testing, production)",
-				Aliases: []string{"env", "e"},
-			},
 		},
 		Action: func(c *cli.Context) error {
 			var (
 				CONFIG_PATH = c.String("config_path")
-				// ENVIRONMENT = c.String("environment")
 			)
 
-			app := pkg.Bootstrap(
-				CONFIG_PATH, shared.BuildNewOnlyofficeConfig(CONFIG_PATH),
-				shared.BuildNewIntegrationCredentialsConfig(CONFIG_PATH),
-				handler.NewConfigHandler, rpc.NewService, web.NewConfigRPCServer,
-				shared.NewBoxAPIClient,
-			)
+			app := pkg.NewBootstrapper(
+				CONFIG_PATH, pkg.WithModules(
+					shared.BuildNewOnlyofficeConfig(CONFIG_PATH),
+					shared.BuildNewIntegrationCredentialsConfig(CONFIG_PATH),
+					handler.NewConfigHandler, rpc.NewService, web.NewConfigRPCServer,
+					shared.NewBoxAPIClient,
+				),
+			).Bootstrap()
 
 			if err := app.Err(); err != nil {
 				return err

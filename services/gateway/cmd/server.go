@@ -19,11 +19,13 @@
 package cmd
 
 import (
-	"github.com/ONLYOFFICE/onlyoffice-box/pkg"
-	chttp "github.com/ONLYOFFICE/onlyoffice-box/pkg/service/http"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/gateway/web"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/gateway/web/controller"
+	"github.com/ONLYOFFICE/onlyoffice-box/services/gateway/web/middleware"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared"
+	pkg "github.com/ONLYOFFICE/onlyoffice-integration-adapters"
+	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/crypto"
+	chttp "github.com/ONLYOFFICE/onlyoffice-integration-adapters/service/http"
 	"github.com/urfave/cli/v2"
 )
 
@@ -38,24 +40,25 @@ func Server() *cli.Command {
 				Usage:   "sets custom configuration path",
 				Aliases: []string{"config", "conf", "c"},
 			},
-			&cli.StringFlag{
-				Name:    "environment",
-				Usage:   "sets servers environment (development, testing, production)",
-				Aliases: []string{"env", "e"},
-			},
 		},
 		Action: func(c *cli.Context) error {
 			var (
 				CONFIG_PATH = c.String("config_path")
-				// ENVIRONMENT = c.String("environment")
 			)
 
-			app := pkg.Bootstrap(
+			app := pkg.NewBootstrapper(
 				CONFIG_PATH,
-				controller.NewAuthController, controller.NewEditorController,
-				chttp.NewService, web.NewServer, shared.BuildNewIntegrationCredentialsConfig(CONFIG_PATH),
-				shared.NewBoxAPIClient, shared.BuildNewOnlyofficeConfig(CONFIG_PATH),
-			)
+				pkg.WithModules(
+					controller.NewAuthController, controller.NewEditorController,
+					controller.NewFileController,
+					chttp.NewService, web.NewServer,
+					shared.BuildNewIntegrationCredentialsConfig(CONFIG_PATH),
+					shared.NewBoxAPIClient, shared.BuildNewOnlyofficeConfig(CONFIG_PATH),
+					crypto.NewStateGenerator,
+					middleware.NewSessionStore,
+					middleware.NewSessionMiddleware,
+				),
+			).Bootstrap()
 
 			if err := app.Err(); err != nil {
 				return err

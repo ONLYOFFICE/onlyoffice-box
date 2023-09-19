@@ -1,6 +1,6 @@
 namespace: "box"
 name: "auth"
-version: 0
+version: "0.0.1"
 address: ":5052"
 repl_address: ":5053"
 debug: false

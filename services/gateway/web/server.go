@@ -21,32 +21,44 @@ package web
 import (
 	"net/http"
 
-	shttp "github.com/ONLYOFFICE/onlyoffice-box/pkg/service/http"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/gateway/web/controller"
-	"github.com/gin-gonic/gin"
+	"github.com/ONLYOFFICE/onlyoffice-box/services/gateway/web/middleware"
+	shttp "github.com/ONLYOFFICE/onlyoffice-integration-adapters/service/http"
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
-	"github.com/gorilla/sessions"
+	"github.com/gorilla/csrf"
+	"golang.org/x/oauth2"
 )
 
 type BoxHTTPService struct {
-	mux              *chi.Mux
-	store            sessions.Store
-	authController   controller.AuthController
-	editorController controller.EditorController
+	mux               *chi.Mux
+	authController    controller.AuthController
+	editorController  controller.EditorController
+	fileController    controller.FileController
+	sessionMiddleware middleware.SessionMiddleware
+	csrfMiddleware    func(http.Handler) http.Handler
 }
 
 // NewService initializes http server with options.
 func NewServer(
 	authController controller.AuthController,
 	editorController controller.EditorController,
+	fileController controller.FileController,
+	sessionMiddleware middleware.SessionMiddleware,
+	credentials *oauth2.Config,
 ) shttp.ServerEngine {
-	gin.SetMode(gin.ReleaseMode)
-
 	service := BoxHTTPService{
-		mux:              chi.NewRouter(),
-		authController:   authController,
-		editorController: editorController,
+		mux:               chi.NewRouter(),
+		authController:    authController,
+		editorController:  editorController,
+		fileController:    fileController,
+		sessionMiddleware: sessionMiddleware,
+		csrfMiddleware: csrf.Protect(
+			[]byte(credentials.ClientSecret),
+			csrf.HttpOnly(true),
+			csrf.Secure(true),
+			csrf.SameSite(csrf.SameSiteNoneMode),
+		),
 	}
 
 	return service
@@ -78,13 +90,20 @@ func (s *BoxHTTPService) InitializeRoutes() {
 
 		r.Handle("/static/*", http.StripPrefix("/static/", fs))
 
+		r.Route("/", func(cr chi.Router) {
+			cr.Use(s.sessionMiddleware.Protect, s.csrfMiddleware)
+			cr.Get("/editor", s.editorController.BuildGetEditor())
+			cr.Get("/convert", s.fileController.BuildConvertPage())
+			cr.Post("/convert", s.fileController.BuildConvertFile())
+		})
+
 		r.Route("/oauth", func(cr chi.Router) {
-			cr.Get("/auth", s.authController.BuildGetAuth())
+			cr.Get("/install", s.authController.BuildGetAuth())
 			cr.Get("/redirect", s.authController.BuildGetRedirect())
 		})
 
-		r.Route("/api", func(cr chi.Router) {
-			cr.Get("/editor", s.editorController.BuildGetEditor())
+		r.NotFound(func(rw http.ResponseWriter, r *http.Request) {
+			http.Redirect(rw, r, "/oauth/install", http.StatusMovedPermanently)
 		})
 	})
 }

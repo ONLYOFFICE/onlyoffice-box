@@ -21,10 +21,8 @@ package web
 import (
 	"net/http"
 
-	chttp "github.com/ONLYOFFICE/onlyoffice-box/pkg/service/http"
-	"github.com/ONLYOFFICE/onlyoffice-box/pkg/worker"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/callback/web/controller"
-	workerh "github.com/ONLYOFFICE/onlyoffice-box/services/callback/web/worker"
+	chttp "github.com/ONLYOFFICE/onlyoffice-integration-adapters/service/http"
 	"github.com/gin-gonic/gin"
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
@@ -32,9 +30,6 @@ import (
 
 type CallbackService struct {
 	mux               *chi.Mux
-	worker            worker.BackgroundWorker
-	cbworker          workerh.CallbackWorker
-	enqueuer          worker.BackgroundEnqueuer
 	callbackConroller controller.CallbackController
 }
 
@@ -45,18 +40,12 @@ func (s CallbackService) ApplyMiddleware(middlewares ...func(http.Handler) http.
 
 // NewService initializes http server with options.
 func NewServer(
-	wrkr worker.BackgroundWorker,
-	cbworker workerh.CallbackWorker,
-	enqueuer worker.BackgroundEnqueuer,
 	callbackController controller.CallbackController,
 ) chttp.ServerEngine {
 	gin.SetMode(gin.ReleaseMode)
 
 	service := CallbackService{
 		mux:               chi.NewRouter(),
-		worker:            wrkr,
-		cbworker:          cbworker,
-		enqueuer:          enqueuer,
 		callbackConroller: callbackController,
 	}
 
@@ -72,9 +61,7 @@ func (s CallbackService) NewHandler() interface {
 
 // InitializeServer sets all injected dependencies.
 func (s *CallbackService) InitializeServer() *chi.Mux {
-	s.worker.Register("box-callback-upload", s.cbworker.UploadFile)
 	s.InitializeRoutes()
-	s.worker.Run()
 	return s.mux
 }
 
@@ -85,6 +72,6 @@ func (s *CallbackService) InitializeRoutes() {
 		r.NotFound(func(rw http.ResponseWriter, r *http.Request) {
 			http.Redirect(rw, r.WithContext(r.Context()), "https://onlyoffice.com", http.StatusMovedPermanently)
 		})
-		r.Post("/callback", s.callbackConroller.BuildPostHandleCallback(s.enqueuer))
+		r.Post("/callback", s.callbackConroller.BuildPostHandleCallback())
 	})
 }
