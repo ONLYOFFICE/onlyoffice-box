@@ -16,7 +16,8 @@ _**Please note**: the app uses the pre-configured tenant of ONLYOFFICE Docs Clou
 
 ONLYOFFICE app for Box supports working with multiple file formats:
 
-* OOXML files, including DOCX, XLSX, PPTX, are opened directly for editing.
+* OOXML files, including DOCX, XLSX, PPTX, are opened directly for editing. 
+* DOCXF and OFORM are supported for working with digital forms. 
 * ODT, ODP, ODS, TXT, CSV, RTF, EPUB, FB2 can be opened for viewing only, directly for editing with possible data loss due to format restrictions, or converted to OOXML for further editing.
 * DOC, XLS, PPT, DOT, ET, FODP, HTM, POT, etc. can be opened for viewing only or converted to OOXML for editing.
 * PDF, DJVU, OXPS can be opened for viewing only.
