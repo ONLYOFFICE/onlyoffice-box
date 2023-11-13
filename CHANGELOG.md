@@ -1,5 +1,9 @@
 # Change Log
 
+##
+## Changed
+- update of vulnerable dependencies
+
 ## 1.0.0
 ## Added
 - collaboration editing for DOCX, DOCXF, OFORM, XLSX, PPTX
