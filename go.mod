@@ -133,7 +133,7 @@ require (
 	github.com/go-micro/plugins/v4/wrapper/ratelimiter/uber v1.2.0 // indirect
 	github.com/go-micro/plugins/v4/wrapper/select/roundrobin v1.2.0 // indirect
 	github.com/go-micro/plugins/v4/wrapper/trace/opentelemetry v1.2.0 // indirect
-	github.com/go-resty/resty/v2 v2.10.0
+	github.com/go-resty/resty/v2 v2.11.0
 	github.com/golang-jwt/jwt/v5 v5.1.0
 	github.com/golang/mock v1.6.0 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
