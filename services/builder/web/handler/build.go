@@ -26,12 +26,12 @@ import (
 	"sync"
 
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared"
+	"github.com/ONLYOFFICE/onlyoffice-box/services/shared/format"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared/request"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared/response"
 	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/config"
 	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/crypto"
 	plog "github.com/ONLYOFFICE/onlyoffice-integration-adapters/log"
-	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/onlyoffice"
 	"github.com/google/uuid"
 	"github.com/mileusna/useragent"
 	"go-micro.dev/v4/client"
@@ -39,19 +39,20 @@ import (
 )
 
 var (
-	_ErrOperationTimeout = errors.New("operation timeout")
-	group                singleflight.Group
+	_ErrOperationTimeout   = errors.New("operation timeout")
+	_ErrFormatNotSupported = errors.New("current format is not supported")
+	group                  singleflight.Group
 )
 
 type ConfigHandler struct {
-	client     client.Client
-	boxClient  shared.BoxAPI
-	jwtManager crypto.JwtManager
-	hasher     crypto.Hasher
-	fileUtil   onlyoffice.OnlyofficeFileUtility
-	server     *config.ServerConfig
-	onlyoffice *shared.OnlyofficeConfig
-	logger     plog.Logger
+	client        client.Client
+	boxClient     shared.BoxAPI
+	jwtManager    crypto.JwtManager
+	hasher        crypto.Hasher
+	formatManager format.FormatManager
+	server        *config.ServerConfig
+	onlyoffice    *shared.OnlyofficeConfig
+	logger        plog.Logger
 }
 
 func NewConfigHandler(
@@ -59,24 +60,28 @@ func NewConfigHandler(
 	boxClient shared.BoxAPI,
 	jwtManager crypto.JwtManager,
 	hasher crypto.Hasher,
-	fileUtil onlyoffice.OnlyofficeFileUtility,
+	formatManager format.FormatManager,
 	server *config.ServerConfig,
 	onlyoffice *shared.OnlyofficeConfig,
 	logger plog.Logger,
 ) ConfigHandler {
 	return ConfigHandler{
-		client:     client,
-		boxClient:  boxClient,
-		jwtManager: jwtManager,
-		hasher:     hasher,
-		fileUtil:   fileUtil,
-		server:     server,
-		onlyoffice: onlyoffice,
-		logger:     logger,
+		client:        client,
+		boxClient:     boxClient,
+		jwtManager:    jwtManager,
+		hasher:        hasher,
+		formatManager: formatManager,
+		server:        server,
+		onlyoffice:    onlyoffice,
+		logger:        logger,
 	}
 }
 
-func (c ConfigHandler) processConfig(user response.UserResponse, req request.BoxState, ctx context.Context) (response.BuildConfigResponse, error) {
+func (c ConfigHandler) processConfig(
+	ctx context.Context,
+	user response.UserResponse,
+	req request.BoxState,
+) (response.BuildConfigResponse, error) {
 	var config response.BuildConfigResponse
 
 	var ures response.UserResponse
@@ -143,7 +148,7 @@ func (c ConfigHandler) processConfig(user response.UserResponse, req request.Box
 		return config, err
 	}
 
-	filename := c.fileUtil.EscapeFilename(file.Name)
+	filename := c.formatManager.EscapeFileName(file.Name)
 	config = response.BuildConfigResponse{
 		Document: response.Document{
 			Key:   string(c.hasher.Hash(file.ModifiedAt + file.ID)),
@@ -173,14 +178,14 @@ func (c ConfigHandler) processConfig(user response.UserResponse, req request.Box
 	}
 
 	if strings.TrimSpace(filename) != "" {
-		fileType, err := c.fileUtil.GetFileType(file.Extension)
-		if err != nil {
-			return config, err
+		format, supported := c.formatManager.GetFormatByName(file.Extension)
+		if !supported {
+			return config, _ErrFormatNotSupported
 		}
 
 		config.Document.FileType = file.Extension
 		config.Document.Permissions = response.Permissions{
-			Edit:                 file.Permissions.CanUpload && (c.fileUtil.IsExtensionEditable(file.Extension) || req.ForceEdit),
+			Edit:                 file.Permissions.CanUpload && (format.IsEditable() || (req.ForceEdit && format.IsLossyEditable())),
 			Comment:              file.Permissions.CanComment,
 			Download:             file.Permissions.CanDownload,
 			Print:                file.Permissions.CanDownload,
@@ -188,14 +193,14 @@ func (c ConfigHandler) processConfig(user response.UserResponse, req request.Box
 			Copy:                 true,
 			ModifyContentControl: true,
 			ModifyFilter:         true,
-			FillForms:            c.fileUtil.IsExtensionEditable(file.Extension),
+			FillForms:            format.IsFillable(),
 		}
 
 		if !config.Document.Permissions.Edit {
 			config.Document.Key = uuid.NewString()
 		}
 
-		config.DocumentType = fileType
+		config.DocumentType = format.Type
 	}
 
 	token, err := c.jwtManager.Sign(c.onlyoffice.Onlyoffice.Builder.DocumentServerSecret, config)
@@ -208,7 +213,11 @@ func (c ConfigHandler) processConfig(user response.UserResponse, req request.Box
 	return config, nil
 }
 
-func (c ConfigHandler) BuildConfig(ctx context.Context, payload request.BoxState, res *response.BuildConfigResponse) error {
+func (c ConfigHandler) BuildConfig(
+	ctx context.Context,
+	payload request.BoxState,
+	res *response.BuildConfigResponse,
+) error {
 	c.logger.Debugf("processing a docs config: %s", payload.FileID)
 
 	config, err, _ := group.Do(fmt.Sprintf("%s:%s", payload.UserID, payload.FileID), func() (interface{}, error) {
@@ -223,7 +232,7 @@ func (c ConfigHandler) BuildConfig(ctx context.Context, payload request.BoxState
 			return nil, err
 		}
 
-		config, err := c.processConfig(ures, payload, ctx)
+		config, err := c.processConfig(ctx, ures, payload)
 		if err != nil {
 			return nil, err
 		}

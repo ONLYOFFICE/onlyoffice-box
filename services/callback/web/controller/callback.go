@@ -21,9 +21,11 @@ package controller
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -34,25 +36,40 @@ import (
 	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/config"
 	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/crypto"
 	plog "github.com/ONLYOFFICE/onlyoffice-integration-adapters/log"
-	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/onlyoffice"
 	"go-micro.dev/v4/client"
 	"go-micro.dev/v4/util/backoff"
 )
 
+var _ErrInvalidContentLength = errors.New("could not perform api actions due to exceeding content-length")
+
 type CallbackController struct {
 	client     client.Client
 	jwtManger  crypto.JwtManager
-	fileUtil   onlyoffice.OnlyofficeFileUtility
 	boxAPI     shared.BoxAPI
 	server     *config.ServerConfig
 	onlyoffice *shared.OnlyofficeConfig
 	logger     plog.Logger
 }
 
+func (c CallbackController) validateFileSize(ctx context.Context, limit int64, url string) error {
+	resp, err := http.Head(url)
+
+	if err != nil {
+		return err
+	}
+
+	if val, err := strconv.ParseInt(
+		resp.Header.Get("Content-Length"), 10, 0,
+	); val > limit || err != nil {
+		return _ErrInvalidContentLength
+	}
+
+	return nil
+}
+
 func NewCallbackController(
 	client client.Client,
 	jwtManger crypto.JwtManager,
-	fileUtil onlyoffice.OnlyofficeFileUtility,
 	boxAPI shared.BoxAPI,
 	server *config.ServerConfig,
 	onlyoffice *shared.OnlyofficeConfig,
@@ -61,7 +78,6 @@ func NewCallbackController(
 	return CallbackController{
 		client:     client,
 		jwtManger:  jwtManger,
-		fileUtil:   fileUtil,
 		boxAPI:     boxAPI,
 		server:     server,
 		onlyoffice: onlyoffice,
@@ -92,9 +108,14 @@ func (c CallbackController) uploadFile(user, url, fileID, filename string) error
 		)
 
 		var ures response.UserResponse
-		if err := c.client.Call(ctx, req, &ures, client.WithRetries(3), client.WithBackoff(func(ctx context.Context, req client.Request, attempts int) (time.Duration, error) {
-			return backoff.Do(attempts), nil
-		})); err != nil {
+		if err := c.client.Call(
+			ctx, req, &ures,
+			client.WithRetries(3),
+			client.WithBackoff(func(
+				ctx context.Context, req client.Request, attempts int,
+			) (time.Duration, error) {
+				return backoff.Do(attempts), nil
+			})); err != nil {
 			c.logger.Errorf("could not get user credentials: %s", err.Error())
 			errChan <- err
 			return
@@ -179,7 +200,10 @@ func (c CallbackController) BuildPostHandleCallback() http.HandlerFunc {
 			return
 		}
 
-		if err := c.jwtManger.Verify(c.onlyoffice.Onlyoffice.Builder.DocumentServerSecret, body.Token, &body); err != nil {
+		if err := c.jwtManger.Verify(
+			c.onlyoffice.Onlyoffice.Builder.DocumentServerSecret,
+			body.Token, &body,
+		); err != nil {
 			c.logger.Errorf("could not verify callback jwt (%s). Reason: %s", body.Token, err.Error())
 			rw.WriteHeader(http.StatusForbidden)
 			rw.Write(response.CallbackResponse{
@@ -200,7 +224,7 @@ func (c CallbackController) BuildPostHandleCallback() http.HandlerFunc {
 		if body.Status == 2 {
 			tctx, cancel := context.WithTimeout(r.Context(), 6*time.Second)
 			defer cancel()
-			if err := c.fileUtil.ValidateFileSize(
+			if err := c.validateFileSize(
 				tctx, c.onlyoffice.Onlyoffice.Callback.MaxSize, body.URL,
 			); err != nil {
 				rw.WriteHeader(http.StatusForbidden)

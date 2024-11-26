@@ -26,17 +26,19 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/ONLYOFFICE/onlyoffice-box/services/gateway/web/embeddable"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared"
+	"github.com/ONLYOFFICE/onlyoffice-box/services/shared/format"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared/request"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared/response"
 	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/config"
 	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/crypto"
 	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/log"
-	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/onlyoffice"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/csrf"
 	"github.com/gorilla/sessions"
@@ -47,40 +49,43 @@ import (
 	"golang.org/x/sync/semaphore"
 )
 
-var _ErrCsvIsNotSupported = errors.New("csv conversion is not supported")
+var (
+	_ErrCsvIsNotSupported  = errors.New("csv conversion is not supported")
+	_ErrFormatNotSupported = errors.New("format is not supported")
+)
 
 type FileController struct {
-	client      client.Client
-	boxClient   shared.BoxAPI
-	jwtManager  crypto.JwtManager
-	fileUtil    onlyoffice.OnlyofficeFileUtility
-	hasher      crypto.Hasher
-	credentials *oauth2.Config
-	server      *config.ServerConfig
-	onlyoffice  *shared.OnlyofficeConfig
-	sem         *semaphore.Weighted
-	store       *sessions.CookieStore
-	logger      log.Logger
+	client        client.Client
+	boxClient     shared.BoxAPI
+	jwtManager    crypto.JwtManager
+	formatManager format.FormatManager
+	hasher        crypto.Hasher
+	credentials   *oauth2.Config
+	server        *config.ServerConfig
+	onlyoffice    *shared.OnlyofficeConfig
+	sem           *semaphore.Weighted
+	store         *sessions.CookieStore
+	logger        log.Logger
 }
 
 func NewFileController(
 	client client.Client, boxClient shared.BoxAPI, jwtManager crypto.JwtManager,
-	credentials *oauth2.Config, fileUtil onlyoffice.OnlyofficeFileUtility, hasher crypto.Hasher,
+	credentials *oauth2.Config, formatManager format.FormatManager, hasher crypto.Hasher,
 	server *config.ServerConfig, onlyoffice *shared.OnlyofficeConfig,
 	store *sessions.CookieStore, logger log.Logger,
 ) FileController {
 	return FileController{
-		client:      client,
-		boxClient:   boxClient,
-		jwtManager:  jwtManager,
-		fileUtil:    fileUtil,
-		hasher:      hasher,
-		credentials: credentials,
-		server:      server,
-		onlyoffice:  onlyoffice,
-		sem:         semaphore.NewWeighted(int64(onlyoffice.Onlyoffice.Builder.AllowedDownloads)),
-		store:       store,
-		logger:      logger,
+		client:        client,
+		boxClient:     boxClient,
+		jwtManager:    jwtManager,
+		formatManager: formatManager,
+		hasher:        hasher,
+		credentials:   credentials,
+		server:        server,
+		onlyoffice:    onlyoffice,
+		sem:           semaphore.NewWeighted(int64(onlyoffice.Onlyoffice.Builder.AllowedDownloads)),
+		store:         store,
+		logger:        logger,
 	}
 }
 
@@ -169,20 +174,32 @@ func (c FileController) BuildConvertPage() http.HandlerFunc {
 		}
 
 		loc = i18n.NewLocalizer(embeddable.Bundle, user.Language)
-		if !file.Permissions.CanUpload || c.fileUtil.IsExtensionEditable(file.Extension) || c.fileUtil.IsExtensionViewOnly(file.Extension) {
-			http.Redirect(rw, r, fmt.Sprintf("/editor?state=%s&user=%s", url.QueryEscape(string(request.ConvertRequestBody{
-				Action: "edit",
-				UserID: ures.ID,
-				FileID: fileID,
-			}.ToJSON())), userID), http.StatusMovedPermanently)
+
+		// Format checks are handled by box. In case of an unexpected event render try again page
+		format, supported := c.formatManager.GetFormatByName(file.Extension)
+		if !supported {
+			embeddable.ErrorPage.ExecuteTemplate(rw, "error", errMsg)
+			return
+		}
+
+		if !file.Permissions.CanUpload || format.IsEditable() || format.IsViewOnly() {
+			http.Redirect(rw, r, fmt.Sprintf(
+				"/editor?state=%s&user=%s",
+				url.QueryEscape(string(request.ConvertRequestBody{
+					Action: "edit",
+					UserID: ures.ID,
+					FileID: fileID,
+				}.ToJSON())),
+				userID,
+			), http.StatusMovedPermanently)
 			return
 		}
 
 		rw.Header().Set("Content-Type", "text/html")
 		embeddable.ConvertPage.Execute(rw, map[string]interface{}{
 			"CSRF":     csrf.Token(r),
-			"OOXML":    file.Extension != "csv" && (c.fileUtil.IsExtensionOOXMLConvertable(file.Extension) || c.fileUtil.IsExtensionLossEditable(file.Extension)),
-			"LossEdit": c.fileUtil.IsExtensionLossEditable(file.Extension),
+			"OOXML":    file.Extension != "csv" && (format.IsOpenXMLConvertable() || format.IsLossyEditable()),
+			"LossEdit": format.IsLossyEditable(),
 			"User":     userID,
 			"File":     fileID,
 			"openOnlyoffice": loc.MustLocalize(&i18n.LocalizeConfig{
@@ -333,17 +350,16 @@ func (c FileController) convertFile(ctx context.Context, body request.ConvertReq
 		return body, _ErrCsvIsNotSupported
 	}
 
-	var cresp response.ConvertResponse
-	fType, err := c.fileUtil.GetFileType(fileInfo.Extension)
-	if err != nil {
-		c.logger.Debugf("could not get file type: %s", err.Error())
-		return body, err
+	format, supported := c.formatManager.GetFormatByName(fileInfo.Extension)
+	if !supported {
+		return body, _ErrFormatNotSupported
 	}
 
+	var cresp response.ConvertResponse
 	creq := request.ConvertAPIRequest{
 		Async:      false,
 		Key:        string(c.hasher.Hash(fileInfo.ModifiedAt + fileInfo.ID)),
-		Filetype:   fType,
+		Filetype:   format.GetOpenXMLExtension(),
 		Outputtype: "ooxml",
 		URL:        durl,
 	}
@@ -359,7 +375,11 @@ func (c FileController) convertFile(ctx context.Context, body request.ConvertReq
 	req, err := http.NewRequestWithContext(
 		ctx,
 		"POST",
-		fmt.Sprintf("%s/ConvertService.ashx", c.onlyoffice.Onlyoffice.Builder.DocumentServerURL),
+		fmt.Sprintf(
+			"%s/converter?shardkey=%s",
+			c.onlyoffice.Onlyoffice.Builder.DocumentServerURL,
+			creq.Key,
+		),
 		bytes.NewBuffer(creq.ToJSON()),
 	)
 
@@ -395,7 +415,7 @@ func (c FileController) convertFile(ctx context.Context, body request.ConvertReq
 	defer fresp.Body.Close()
 	nresp, err := c.boxClient.CreateFile(
 		ctx, fmt.Sprintf("%s (%s).%s",
-			c.fileUtil.GetFilenameWithoutExtension(fileInfo.Name),
+			strings.TrimSuffix(fileInfo.Name, filepath.Ext(fileInfo.Name)),
 			time.Now().Format("2006-01-02 15:04:05.000"),
 			cresp.FileType,
 		),

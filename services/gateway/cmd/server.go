@@ -23,6 +23,7 @@ import (
 	"github.com/ONLYOFFICE/onlyoffice-box/services/gateway/web/controller"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/gateway/web/middleware"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared"
+	"github.com/ONLYOFFICE/onlyoffice-box/services/shared/format"
 	pkg "github.com/ONLYOFFICE/onlyoffice-integration-adapters"
 	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/crypto"
 	chttp "github.com/ONLYOFFICE/onlyoffice-integration-adapters/service/http"
@@ -57,6 +58,7 @@ func Server() *cli.Command {
 					crypto.NewStateGenerator,
 					middleware.NewSessionStore,
 					middleware.NewSessionMiddleware,
+					format.NewMapFormatManager,
 				),
 			).Bootstrap()
 
