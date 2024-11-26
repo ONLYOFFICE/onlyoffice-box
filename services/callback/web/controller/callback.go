@@ -40,36 +40,20 @@ import (
 	"go-micro.dev/v4/util/backoff"
 )
 
-var _ErrInvalidContentLength = errors.New("could not perform api actions due to exceeding content-length")
+var ErrInvalidContentLength = errors.New("content length exceeds the limit")
 
 type CallbackController struct {
 	client     client.Client
-	jwtManger  crypto.JwtManager
+	jwtManager crypto.JwtManager
 	boxAPI     shared.BoxAPI
 	server     *config.ServerConfig
 	onlyoffice *shared.OnlyofficeConfig
 	logger     plog.Logger
 }
 
-func (c CallbackController) validateFileSize(ctx context.Context, limit int64, url string) error {
-	resp, err := http.Head(url)
-
-	if err != nil {
-		return err
-	}
-
-	if val, err := strconv.ParseInt(
-		resp.Header.Get("Content-Length"), 10, 0,
-	); val > limit || err != nil {
-		return _ErrInvalidContentLength
-	}
-
-	return nil
-}
-
 func NewCallbackController(
 	client client.Client,
-	jwtManger crypto.JwtManager,
+	jwtManager crypto.JwtManager,
 	boxAPI shared.BoxAPI,
 	server *config.ServerConfig,
 	onlyoffice *shared.OnlyofficeConfig,
@@ -77,7 +61,7 @@ func NewCallbackController(
 ) CallbackController {
 	return CallbackController{
 		client:     client,
-		jwtManger:  jwtManger,
+		jwtManager: jwtManager,
 		boxAPI:     boxAPI,
 		server:     server,
 		onlyoffice: onlyoffice,
@@ -85,173 +69,137 @@ func NewCallbackController(
 	}
 }
 
-func (c CallbackController) uploadFile(user, url, fileID, filename string) error {
-	ctx, cancel := context.WithTimeout(
-		context.Background(), time.Duration(
-			c.onlyoffice.Onlyoffice.Callback.UploadTimeout,
-		)*time.Second,
-	)
-
-	defer cancel()
-
-	c.logger.Debugf("user %s is uploading a new file", user)
-	var wg sync.WaitGroup
-	wg.Add(2)
-	errChan := make(chan error, 2)
-	userChan := make(chan response.UserResponse, 1)
-	fileChan := make(chan io.ReadCloser, 1)
-
-	go func() {
-		defer wg.Done()
-		req := c.client.NewRequest(
-			fmt.Sprintf("%s:auth", c.server.Namespace), "UserSelectHandler.GetUser", user,
-		)
-
-		var ures response.UserResponse
-		if err := c.client.Call(
-			ctx, req, &ures,
-			client.WithRetries(3),
-			client.WithBackoff(func(
-				ctx context.Context, req client.Request, attempts int,
-			) (time.Duration, error) {
-				return backoff.Do(attempts), nil
-			})); err != nil {
-			c.logger.Errorf("could not get user credentials: %s", err.Error())
-			errChan <- err
-			return
-		}
-
-		userChan <- ures
-	}()
-
-	go func() {
-		defer wg.Done()
-		resp, err := http.Get(url)
-		if err != nil {
-			c.logger.Errorf("could not download a new file: %s", err.Error())
-			errChan <- err
-			return
-		}
-
-		fileChan <- resp.Body
-	}()
-
-	select {
-	case err := <-errChan:
-		return err
-	case <-ctx.Done():
-		c.logger.Error("file upload timeout")
-		return http.ErrHandlerTimeout
-	default:
+func (c *CallbackController) validateFileSize(ctx context.Context, limit int64, url string) error {
+	resp, err := http.Head(url)
+	if err != nil {
+		return fmt.Errorf("failed to fetch file metadata: %w", err)
 	}
+	defer resp.Body.Close()
 
-	ures := <-userChan
-	body := <-fileChan
-	defer body.Close()
-
-	if err := c.boxAPI.UploadFile(ctx, filename, ures.AccessToken, fileID, body); err != nil {
-		c.logger.Errorf("could not upload file %s: %s", filename, err.Error())
-		return err
+	contentLength, err := strconv.ParseInt(resp.Header.Get("Content-Length"), 10, 64)
+	if err != nil {
+		return fmt.Errorf("invalid content-length: %w", err)
+	}
+	if contentLength > limit {
+		return ErrInvalidContentLength
 	}
 
 	return nil
 }
 
-func (c CallbackController) BuildPostHandleCallback() http.HandlerFunc {
+func (c *CallbackController) uploadFile(user, url, fileID, filename string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(c.onlyoffice.Onlyoffice.Callback.UploadTimeout)*time.Second)
+	defer cancel()
+
+	c.logger.Debugf("user %s is uploading a file", user)
+
+	var wg sync.WaitGroup
+	errChan := make(chan error, 2)
+	userChan := make(chan response.UserResponse, 1)
+	fileChan := make(chan io.ReadCloser, 1)
+
+	wg.Add(2)
+
+	go c.fetchUser(ctx, user, userChan, errChan, &wg)
+	go c.fetchFile(url, fileChan, errChan, &wg)
+
+	wg.Wait()
+	close(errChan)
+
+	if err := <-errChan; err != nil {
+		return err
+	}
+
+	ures := <-userChan
+	fileBody := <-fileChan
+	defer fileBody.Close()
+
+	return c.boxAPI.UploadFile(ctx, filename, ures.AccessToken, fileID, fileBody)
+}
+
+func (c *CallbackController) fetchUser(ctx context.Context, user string, userChan chan<- response.UserResponse, errChan chan<- error, wg *sync.WaitGroup) {
+	defer wg.Done()
+	req := c.client.NewRequest(fmt.Sprintf("%s:auth", c.server.Namespace), "UserSelectHandler.GetUser", user)
+	var ures response.UserResponse
+
+	err := c.client.Call(ctx, req, &ures, client.WithRetries(3), client.WithBackoff(func(
+		ctx context.Context, req client.Request, attempts int,
+	) (time.Duration, error) {
+		return backoff.Do(attempts), nil
+	}))
+
+	if err != nil {
+		c.logger.Errorf("failed to fetch user credentials: %v", err)
+		errChan <- err
+		return
+	}
+
+	userChan <- ures
+}
+
+func (c *CallbackController) fetchFile(url string, fileChan chan<- io.ReadCloser, errChan chan<- error, wg *sync.WaitGroup) {
+	defer wg.Done()
+	resp, err := http.Get(url)
+	if err != nil {
+		c.logger.Errorf("failed to download file: %v", err)
+		errChan <- err
+		return
+	}
+	fileChan <- resp.Body
+}
+
+func (c *CallbackController) handleError(rw http.ResponseWriter, statusCode int, message string, err error) {
+	c.logger.Errorf("%s: %v", message, err)
+	rw.WriteHeader(statusCode)
+	rw.Write(response.CallbackResponse{Error: 1}.ToJSON())
+}
+
+func (c *CallbackController) BuildPostHandleCallback() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		rw.Header().Set("Content-Type", "application/json")
 
 		fileID := strings.TrimSpace(r.URL.Query().Get("id"))
-		if fileID == "" {
-			c.logger.Error("file id is empty")
-			rw.WriteHeader(http.StatusBadRequest)
-			rw.Write(response.CallbackResponse{
-				Error: 1,
-			}.ToJSON())
-			return
-		}
-
 		name := strings.TrimSpace(r.URL.Query().Get("name"))
-		if name == "" {
-			c.logger.Error("file name is empty")
-			rw.WriteHeader(http.StatusBadRequest)
-			rw.Write(response.CallbackResponse{
-				Error: 1,
-			}.ToJSON())
+		if fileID == "" || name == "" {
+			c.handleError(rw, http.StatusBadRequest, "missing file id or name", nil)
 			return
 		}
 
 		var body request.CallbackRequest
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-			c.logger.Errorf("could not decode a callback body")
-			rw.WriteHeader(http.StatusBadRequest)
-			rw.Write(response.CallbackResponse{
-				Error: 1,
-			}.ToJSON())
+			c.handleError(rw, http.StatusBadRequest, "invalid request body", err)
 			return
 		}
 
-		if body.Token == "" {
-			c.logger.Error("invalid callback body token")
-			rw.WriteHeader(http.StatusBadRequest)
-			rw.Write(response.CallbackResponse{
-				Error: 1,
-			}.ToJSON())
-			return
-		}
-
-		if err := c.jwtManger.Verify(
-			c.onlyoffice.Onlyoffice.Builder.DocumentServerSecret,
-			body.Token, &body,
-		); err != nil {
-			c.logger.Errorf("could not verify callback jwt (%s). Reason: %s", body.Token, err.Error())
-			rw.WriteHeader(http.StatusForbidden)
-			rw.Write(response.CallbackResponse{
-				Error: 1,
-			}.ToJSON())
+		if err := c.jwtManager.Verify(c.onlyoffice.Onlyoffice.Builder.DocumentServerSecret, body.Token, &body); err != nil {
+			c.handleError(rw, http.StatusForbidden, "invalid JWT", err)
 			return
 		}
 
 		if err := body.Validate(); err != nil {
-			c.logger.Errorf("invalid callback body. Reason: %s", err.Error())
-			rw.WriteHeader(http.StatusBadRequest)
-			rw.Write(response.CallbackResponse{
-				Error: 1,
-			}.ToJSON())
+			c.handleError(rw, http.StatusBadRequest, "invalid callback body", err)
 			return
 		}
 
 		if body.Status == 2 {
 			tctx, cancel := context.WithTimeout(r.Context(), 6*time.Second)
 			defer cancel()
-			if err := c.validateFileSize(
-				tctx, c.onlyoffice.Onlyoffice.Callback.MaxSize, body.URL,
-			); err != nil {
-				rw.WriteHeader(http.StatusForbidden)
-				c.logger.Warnf("file %s size exceeds the limit", body.Key)
-				rw.Write(response.CallbackResponse{
-					Error: 1,
-				}.ToJSON())
+
+			if err := c.validateFileSize(tctx, c.onlyoffice.Onlyoffice.Callback.MaxSize, body.URL); err != nil {
+				c.handleError(rw, http.StatusForbidden, "file size exceeds limit", err)
 				return
 			}
 
-			usr := body.Users[0]
-			if usr != "" {
-				if err := c.uploadFile(usr, body.URL, fileID, name); err != nil {
-					rw.WriteHeader(http.StatusBadRequest)
-					rw.Write(response.CallbackResponse{
-						Error: 1,
-					}.ToJSON())
+			if len(body.Users) > 0 && body.Users[0] != "" {
+				if err := c.uploadFile(body.Users[0], body.URL, fileID, name); err != nil {
+					c.handleError(rw, http.StatusInternalServerError, "file upload failed", err)
 					return
 				}
-
-				c.logger.Debugf("user %s has uploaded a new file", usr)
+				c.logger.Debugf("user %s uploaded a file successfully", body.Users[0])
 			}
 		}
 
 		rw.WriteHeader(http.StatusOK)
-		rw.Write(response.CallbackResponse{
-			Error: 0,
-		}.ToJSON())
+		rw.Write(response.CallbackResponse{Error: 0}.ToJSON())
 	}
 }
