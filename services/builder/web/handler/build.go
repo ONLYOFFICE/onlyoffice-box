@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared/format"
@@ -32,6 +33,7 @@ import (
 	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/config"
 	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/crypto"
 	plog "github.com/ONLYOFFICE/onlyoffice-integration-adapters/log"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/mileusna/useragent"
 	"go-micro.dev/v4/client"
@@ -203,6 +205,7 @@ func (c ConfigHandler) processConfig(
 		config.DocumentType = format.Type
 	}
 
+	config.ExpiresAt = jwt.NewNumericDate(time.Now().Add(2 * time.Minute))
 	token, err := c.jwtManager.Sign(c.onlyoffice.Onlyoffice.Builder.DocumentServerSecret, config)
 	if err != nil {
 		c.logger.Debugf("could not sign document server config: %s", err.Error())
