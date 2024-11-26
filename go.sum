@@ -6,8 +6,8 @@ github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3
 github.com/Microsoft/go-winio v0.5.2/go.mod h1:WpS1mjBmmwHBEWmogvA2mj8546UReBk4v8QkMxJ6pZY=
 github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERoyfY=
 github.com/Microsoft/go-winio v0.6.2/go.mod h1:yd8OoFMLzJbo9gZq8j5qaps8bJ9aShtEA8Ipt1oGCvU=
-github.com/ONLYOFFICE/onlyoffice-integration-adapters v0.1.3 h1:1xOp5hZmsD6cxqLMQvPJlZhqd412cithYSwpzFqTuuc=
-github.com/ONLYOFFICE/onlyoffice-integration-adapters v0.1.3/go.mod h1:4JWhe3J3iKFmAf+4H5yO6WkDxMFCTKTjzXMltSHNwr4=
+github.com/ONLYOFFICE/onlyoffice-integration-adapters v0.1.4 h1:PRb8OhHE6xv05W5DNrXUYOZR6zQ0Q0DlZheIg5G/4BI=
+github.com/ONLYOFFICE/onlyoffice-integration-adapters v0.1.4/go.mod h1:1xTPYiWmuM0oz5LoNDO4ApB1FFkhAY4Z2C8TcMDgzyk=
 github.com/ProtonMail/go-crypto v1.1.3 h1:nRBOetoydLeUb4nHajyO2bKqMLfWQ/ZPwkXqXxPxCFk=
 github.com/ProtonMail/go-crypto v1.1.3/go.mod h1:rA3QumHc/FZ8pAHreoekgiAbzpNsfQAosU5td4SnOrE=
 github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5 h1:rFw4nCn9iMW+Vajsk51NtYIcwSTkXr+JGrMd36kTDJw=
