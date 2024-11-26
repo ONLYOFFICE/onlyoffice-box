@@ -56,47 +56,54 @@ func NewEditorController(
 	}
 }
 
+func getUserLanguage(session *sessions.Session) string {
+	if lang, ok := session.Values["locale"].(string); ok {
+		return lang
+	}
+
+	return "en"
+}
+
+func (c EditorController) renderLocalizedErrorPage(rw http.ResponseWriter, loc *i18n.Localizer, err error) {
+	errMsg := map[string]interface{}{
+		"errorMain":    loc.MustLocalize(&i18n.LocalizeConfig{MessageID: "errorMain"}),
+		"errorSubtext": loc.MustLocalize(&i18n.LocalizeConfig{MessageID: "errorSubtext"}),
+		"reloadButton": loc.MustLocalize(&i18n.LocalizeConfig{MessageID: "reloadButton"}),
+	}
+	c.logger.Warnf("rendering localized error page due to: %v", err)
+	embeddable.ErrorPage.ExecuteTemplate(rw, "error", errMsg)
+}
+
 func (c EditorController) BuildGetEditor() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		var state request.ConvertRequestBody
-		session, err := c.store.Get(r, "onlyoffice-auth")
-		lang := "en"
-		if err == nil {
-			if ln, ok := session.Values["locale"].(string); ok {
-				lang = ln
-			}
-		}
-
+		session, _ := c.store.Get(r, "onlyoffice-auth")
+		lang := getUserLanguage(session)
 		loc := i18n.NewLocalizer(embeddable.Bundle, lang)
-		errMsg := map[string]interface{}{
-			"errorMain": loc.MustLocalize(&i18n.LocalizeConfig{
-				MessageID: "errorMain",
-			}),
-			"errorSubtext": loc.MustLocalize(&i18n.LocalizeConfig{
-				MessageID: "errorSubtext",
-			}),
-			"reloadButton": loc.MustLocalize(&i18n.LocalizeConfig{
-				MessageID: "reloadButton",
-			}),
-		}
-
+		var state request.ConvertRequestBody
 		if err := json.Unmarshal([]byte(r.URL.Query().Get("state")), &state); err != nil {
-			embeddable.ErrorPage.ExecuteTemplate(rw, "error", errMsg)
+			c.renderLocalizedErrorPage(rw, loc, err)
 			return
 		}
 
-		tctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
+		tctx, cancel := context.WithTimeout(r.Context(), 8*time.Second)
 		defer cancel()
 		var config response.BuildConfigResponse
-		if err := c.client.Call(tctx, c.client.NewRequest(
-			fmt.Sprintf("%s:builder", c.server.Namespace), "ConfigHandler.BuildConfig", request.BoxState{
-				UserID:    state.UserID,
-				FileID:    state.FileID,
-				UserAgent: r.UserAgent(),
-				ForceEdit: state.ForceEdit,
-			}), &config, client.WithRetries(3)); err != nil {
-			c.logger.Errorf("could not build an editor config: %s", err.Error())
-			embeddable.ErrorPage.ExecuteTemplate(rw, "error", errMsg)
+		if err := c.client.Call(
+			tctx,
+			c.client.NewRequest(
+				fmt.Sprintf("%s:builder", c.server.Namespace),
+				"ConfigHandler.BuildConfig",
+				request.BoxState{
+					UserID:    state.UserID,
+					FileID:    state.FileID,
+					UserAgent: r.UserAgent(),
+					ForceEdit: state.ForceEdit,
+				},
+			),
+			&config,
+			client.WithRetries(3),
+		); err != nil {
+			c.renderLocalizedErrorPage(rw, loc, err)
 			return
 		}
 
