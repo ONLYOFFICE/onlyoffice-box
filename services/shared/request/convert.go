@@ -44,6 +44,7 @@ type ConvertAPIRequest struct {
 	Outputtype string `json:"outputtype"`
 	URL        string `json:"url"`
 	Token      string `json:"token,omitempty"`
+	Region     string `json:"region,omitempty"`
 }
 
 func (r ConvertAPIRequest) ToJSON() []byte {
