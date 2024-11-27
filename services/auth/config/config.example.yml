@@ -10,6 +10,12 @@ persistence:
 registry:
   addresses: [""]
   type: 2
+cache:
+  type: 2
+  address: 127.0.0.1:6379
+  username: ""
+  password: ""
+  database: 5
 messaging:
   type: 1
   addresses: [""]

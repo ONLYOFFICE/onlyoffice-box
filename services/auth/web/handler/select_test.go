@@ -50,7 +50,7 @@ func TestSelectCaching(t *testing.T) {
 	service := service.NewUserService(adapter, mockEncryptor{}, cache,
 		&oauth2.Config{ClientSecret: "mock"}, log.NewEmptyLogger())
 
-	sel := NewUserSelectHandler(service, nil, shared.NewBoxAPIClient(), &oauth2.Config{}, log.NewEmptyLogger())
+	sel := NewUserSelectHandler(service, nil, shared.NewBoxAPIClient(cache), &oauth2.Config{}, log.NewEmptyLogger())
 
 	service.CreateUser(context.Background(), domain.UserAccess{
 		ID:           "mock",
