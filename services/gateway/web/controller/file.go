@@ -51,8 +51,8 @@ import (
 )
 
 var (
-	_ErrCsvIsNotSupported  = errors.New("csv conversion is not supported")
-	_ErrFormatNotSupported = errors.New("format is not supported")
+	errCsvIsNotSupported  = errors.New("csv conversion is not supported")
+	errFormatNotSupported = errors.New("format is not supported")
 )
 
 type FileController struct {
@@ -330,12 +330,12 @@ func (c FileController) convertFile(
 	}
 
 	if fileInfo.Extension == "csv" {
-		return body, _ErrCsvIsNotSupported
+		return body, errCsvIsNotSupported
 	}
 
 	format, supported := c.formatManager.GetFormatByName(fileInfo.Extension)
 	if !supported {
-		return body, _ErrFormatNotSupported
+		return body, errFormatNotSupported
 	}
 
 	tag, err := language.Parse(userInfo.Language)
