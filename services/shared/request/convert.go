@@ -29,6 +29,7 @@ type ConvertRequestBody struct {
 	UserID    string `json:"user_id"`
 	FileID    string `json:"file_id"`
 	ForceEdit bool   `json:"force_edit"`
+	XmlType   string `json:"xml_type,omitempty"`
 }
 
 func (r ConvertRequestBody) ToJSON() []byte {

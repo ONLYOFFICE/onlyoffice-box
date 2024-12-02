@@ -14,5 +14,8 @@
     "cannotOpen": "このファイルタイプは正しく開くことができません。",
     "openOnlyoffice": "ONLYOFFICEで開く",
     "successfulInvitation": "Successfully sent invitations",
-    "failedInvitation": "Could not invite users"
+    "failedInvitation": "Could not invite users",
+    "documentType": "Document",
+    "spreadsheetType": "Spreadsheet",
+    "autoType": "Auto"
 }

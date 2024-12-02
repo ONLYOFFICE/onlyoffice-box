@@ -14,5 +14,8 @@
     "cannotOpen": "无法正常打开此文件类型。",
     "openOnlyoffice": "使用 ONLYOFFICE 打开",
     "successfulInvitation": "Successfully sent invitations",
-    "failedInvitation": "Could not invite users"
+    "failedInvitation": "Could not invite users",
+    "documentType": "Document",
+    "spreadsheetType": "Spreadsheet",
+    "autoType": "Auto"
 }

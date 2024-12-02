@@ -14,5 +14,8 @@
     "cannotOpen": "Ce type de fichier ne peut pas être ouvert correctement.",
     "openOnlyoffice": "Ouvrir avec ONLYOFFICE",
     "successfulInvitation": "Successfully sent invitations",
-    "failedInvitation": "Could not invite users"
+    "failedInvitation": "Could not invite users",
+    "documentType": "Document",
+    "spreadsheetType": "Spreadsheet",
+    "autoType": "Auto"
 }

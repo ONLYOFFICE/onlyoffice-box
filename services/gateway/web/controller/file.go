@@ -210,13 +210,14 @@ func (c FileController) BuildConvertPage() http.HandlerFunc {
 		messageIDs := []string{
 			"openOnlyoffice", "cannotOpen", "selectAction", "openView", "createOOXML", "editCopy",
 			"openEditing", "moreInfo", "dataRestrictions", "openButton", "cancelButton",
-			"errorMain", "errorSubtext", "reloadButton",
+			"errorMain", "errorSubtext", "reloadButton", "documentType", "spreadsheetType", "autoType",
 		}
 		localizedMessages := c.getLocalizedMessages(loc, messageIDs)
 
 		data := map[string]interface{}{
 			"CSRF":     csrf.Token(r),
 			"OOXML":    file.Extension != "csv" && (format.IsOpenXMLConvertable() || format.IsLossyEditable()),
+			"IsXML":    file.Extension == "xml",
 			"LossEdit": format.IsLossyEditable(),
 			"User":     userID,
 			"File":     fileID,
@@ -335,9 +336,14 @@ func (c FileController) convertFile(
 		return body, errCsvIsNotSupported
 	}
 
-	format, supported := c.formatManager.GetFormatByName(fileInfo.Extension)
+	_, supported := c.formatManager.GetFormatByName(fileInfo.Extension)
 	if !supported {
 		return body, errFormatNotSupported
+	}
+
+	outputType := "ooxml"
+	if _, supported := c.formatManager.GetFormatByName(body.XmlType); supported && body.XmlType != "" {
+		outputType = body.XmlType
 	}
 
 	tag, err := language.Parse(userInfo.Language)
@@ -351,8 +357,8 @@ func (c FileController) convertFile(
 	creq := request.ConvertAPIRequest{
 		Async:      false,
 		Key:        string(c.hasher.Hash(fileInfo.ModifiedAt + fileInfo.ID)),
-		Filetype:   format.GetOpenXMLExtension(),
-		Outputtype: "ooxml",
+		Filetype:   fileInfo.Extension,
+		Outputtype: outputType,
 		URL:        durl,
 		Region:     fmt.Sprintf("%s-%s", userInfo.Language, region),
 	}
