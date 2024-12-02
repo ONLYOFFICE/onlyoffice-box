@@ -12,5 +12,7 @@
     "openView": "打开文件仅供查看",
     "selectAction": "请选择操作：",
     "cannotOpen": "无法正常打开此文件类型。",
-    "openOnlyoffice": "使用 ONLYOFFICE 打开"
+    "openOnlyoffice": "使用 ONLYOFFICE 打开",
+    "successfulInvitation": "Successfully sent invitations",
+    "failedInvitation": "Could not invite users"
 }

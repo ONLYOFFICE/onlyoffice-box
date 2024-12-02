@@ -30,6 +30,7 @@ import (
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared/response"
 	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/config"
 	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/log"
+	"github.com/gorilla/csrf"
 	"github.com/gorilla/sessions"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"go-micro.dev/v4/client"
@@ -85,36 +86,50 @@ func (c EditorController) BuildGetEditor() http.HandlerFunc {
 			return
 		}
 
-		tctx, cancel := context.WithTimeout(r.Context(), 8*time.Second)
-		defer cancel()
-		var config response.BuildConfigResponse
-		if err := c.client.Call(
-			tctx,
-			c.client.NewRequest(
-				fmt.Sprintf("%s:builder", c.server.Namespace),
-				"ConfigHandler.BuildConfig",
-				request.BoxState{
-					UserID:    state.UserID,
-					FileID:    state.FileID,
-					UserAgent: r.UserAgent(),
-					ForceEdit: state.ForceEdit,
-				},
-			),
-			&config,
-			client.WithRetries(3),
-		); err != nil {
-			c.renderLocalizedErrorPage(rw, loc, err)
-			return
-		}
+		group.Do(fmt.Sprintf("%s:%s", state.UserID, state.FileID), func() (interface{}, error) {
+			tctx, cancel := context.WithTimeout(r.Context(), 8*time.Second)
+			defer cancel()
+			var config response.BuildConfigResponse
+			if err := c.client.Call(
+				tctx,
+				c.client.NewRequest(
+					fmt.Sprintf("%s:builder", c.server.Namespace),
+					"ConfigHandler.BuildConfig",
+					request.BoxState{
+						UserID:    state.UserID,
+						FileID:    state.FileID,
+						UserAgent: r.UserAgent(),
+						ForceEdit: state.ForceEdit,
+					},
+				),
+				&config,
+				client.WithRetries(3),
+			); err != nil {
+				c.renderLocalizedErrorPage(rw, loc, err)
+				return nil, err
+			}
 
-		rw.Header().Set("Content-Type", "text/html")
-		embeddable.EditorPage.Execute(rw, map[string]interface{}{
-			"apijs":   fmt.Sprintf("%s/web-apps/apps/api/documents/api.js", config.ServerURL),
-			"config":  string(config.ToJSON()),
-			"docType": config.DocumentType,
-			"cancelButton": loc.MustLocalize(&i18n.LocalizeConfig{
-				MessageID: "cancelButton",
-			}),
+			rw.Header().Set("Content-Type", "text/html")
+			embeddable.EditorPage.Execute(rw, map[string]interface{}{
+				"apijs":   fmt.Sprintf("%s/web-apps/apps/api/documents/api.js", config.ServerURL),
+				"CSRF":    csrf.Token(r),
+				"Config":  string(config.ToJSON()),
+				"User":    state.UserID,
+				"File":    state.FileID,
+				"Owner":   config.Owner,
+				"DocType": config.DocumentType,
+				"CancelButton": loc.MustLocalize(&i18n.LocalizeConfig{
+					MessageID: "cancelButton",
+				}),
+				"SuccessfulInvitation": loc.MustLocalize(&i18n.LocalizeConfig{
+					MessageID: "successfulInvitation",
+				}),
+				"FailedInvitation": loc.MustLocalize(&i18n.LocalizeConfig{
+					MessageID: "failedInvitation",
+				}),
+			})
+
+			return nil, nil
 		})
 	}
 }

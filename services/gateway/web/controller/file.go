@@ -240,40 +240,42 @@ func (c FileController) BuildConvertFile() http.HandlerFunc {
 			return
 		}
 
-		switch body.Action {
-		case "create":
-			nbody, err := c.convertFile(r.Context(), body)
-			if err != nil {
+		group.Do(fmt.Sprintf("%s:%s", body.UserID, body.FileID), func() (interface{}, error) {
+			switch body.Action {
+			case "create":
+				nbody, err := c.convertFile(r.Context(), body)
+				if err != nil {
+					http.Redirect(rw, r, "https://app.box.com", http.StatusMovedPermanently)
+					return nil, err
+				}
+				http.Redirect(
+					rw, r,
+					fmt.Sprintf("/editor?state=%s&user=%s", url.QueryEscape(string(nbody.ToJSON())), nbody.UserID),
+					http.StatusMovedPermanently,
+				)
+				return nil, nil
+			case "edit":
+				body.ForceEdit = true
+				http.Redirect(
+					rw, r,
+					fmt.Sprintf("/editor?state=%s&user=%s", url.QueryEscape(string(body.ToJSON())), body.UserID),
+					http.StatusMovedPermanently,
+				)
+				return nil, nil
+			case "view":
+				http.Redirect(
+					rw, r,
+					fmt.Sprintf(
+						"/editor?state=%s&user=%s", url.QueryEscape(string(body.ToJSON())), body.UserID,
+					),
+					http.StatusMovedPermanently,
+				)
+				return nil, nil
+			default:
 				http.Redirect(rw, r, "https://app.box.com", http.StatusMovedPermanently)
-				return
+				return nil, nil
 			}
-			http.Redirect(
-				rw, r,
-				fmt.Sprintf("/editor?state=%s&user=%s", url.QueryEscape(string(nbody.ToJSON())), nbody.UserID),
-				http.StatusMovedPermanently,
-			)
-			return
-		case "edit":
-			body.ForceEdit = true
-			http.Redirect(
-				rw, r,
-				fmt.Sprintf("/editor?state=%s&user=%s", url.QueryEscape(string(body.ToJSON())), body.UserID),
-				http.StatusMovedPermanently,
-			)
-			return
-		case "view":
-			http.Redirect(
-				rw, r,
-				fmt.Sprintf(
-					"/editor?state=%s&user=%s", url.QueryEscape(string(body.ToJSON())), body.UserID,
-				),
-				http.StatusMovedPermanently,
-			)
-			return
-		default:
-			http.Redirect(rw, r, "https://app.box.com", http.StatusMovedPermanently)
-			return
-		}
+		})
 	}
 }
 

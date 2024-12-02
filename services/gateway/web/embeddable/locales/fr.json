@@ -12,5 +12,7 @@
     "openView": "Ouvrir le fichier pour affichage uniquement",
     "selectAction": "Veuillez sélectionner une action :",
     "cannotOpen": "Ce type de fichier ne peut pas être ouvert correctement.",
-    "openOnlyoffice": "Ouvrir avec ONLYOFFICE"
+    "openOnlyoffice": "Ouvrir avec ONLYOFFICE",
+    "successfulInvitation": "Successfully sent invitations",
+    "failedInvitation": "Could not invite users"
 }

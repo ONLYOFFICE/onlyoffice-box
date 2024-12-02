@@ -51,7 +51,7 @@ func Server() *cli.Command {
 				CONFIG_PATH,
 				pkg.WithModules(
 					controller.NewAuthController, controller.NewEditorController,
-					controller.NewFileController,
+					controller.NewFileController, controller.NewShareController,
 					chttp.NewService, web.NewServer,
 					shared.BuildNewIntegrationCredentialsConfig(CONFIG_PATH),
 					shared.NewBoxAPIClient, shared.BuildNewOnlyofficeConfig(CONFIG_PATH),
