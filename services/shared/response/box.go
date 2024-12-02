@@ -31,6 +31,25 @@ func (u BoxUserResponse) ToJSON() []byte {
 	return buf
 }
 
+type BoxFileCollaborationsResponse struct {
+	Entries []struct {
+		ID           string `json:"id"`
+		AccessibleBy struct {
+			ID     string `json:"id"`
+			Type   string `json:"type"`
+			Active bool   `json:"is_active"`
+			Name   string `json:"name"`
+			Login  string `json:"login"`
+		} `json:"accessible_by"`
+		Role string `json:"role"`
+	} `json:"entries"`
+}
+
+func (u BoxFileCollaborationsResponse) ToJSON() []byte {
+	buf, _ := json.Marshal(u)
+	return buf
+}
+
 type BoxCredentialsResponse struct {
 	AccessToken  string `json:"access_token" mapstructure:"access_token"`
 	RefreshToken string `json:"refresh_token" mapstructure:"refresh_token"`

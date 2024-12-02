@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/ONLYOFFICE/onlyoffice-box/services/shared/request"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared/response"
 	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/log"
 	"github.com/go-resty/resty/v2"
@@ -37,6 +38,7 @@ var (
 	ErrEmptyResponse           = errors.New("got an empty response")
 	ErrCouldNotCreatePublicURL = errors.New("could not generate a new public URL")
 	ErrCouldNotUploadFile      = errors.New("could not upload a new file version")
+	ErrCouldNotInviteUser      = errors.New("could not invite a new user")
 )
 
 const (
@@ -46,10 +48,19 @@ const (
 	_PartSeparator    = ":"
 )
 
+type BoxRole string
+
+const (
+	Viewer BoxRole = "viewer"
+	Editor BoxRole = "editor"
+)
+
 type BoxAPI interface {
 	GetAuthCredentials(ctx context.Context, code, clientID, clientSecret string) (response.BoxCredentialsResponse, error)
 	RefreshAuthCredentials(ctx context.Context, refreshToken, clientID, clientSecret string) (response.BoxCredentialsResponse, error)
 	GetMe(ctx context.Context, token string) (response.BoxUserResponse, error)
+	GetInvitations(ctx context.Context, token, fileID string) (response.BoxFileCollaborationsResponse, error)
+	InviteUser(ctx context.Context, token, fileID, userEmail string, role BoxRole) error
 	GetFileInfo(ctx context.Context, token, fileID string) (response.BoxFileResponse, error)
 	GetFilePublicUrl(ctx context.Context, token, fileID string) (string, error)
 	UploadFile(ctx context.Context, filename, token, fileID string, file io.ReadCloser) error
@@ -153,6 +164,48 @@ func (c *boxAPIClient) GetMe(ctx context.Context, token string) (response.BoxUse
 
 	c.cache.Put(ctx, cacheKey, user, 10*time.Second)
 	return user, nil
+}
+
+func (c *boxAPIClient) GetInvitations(ctx context.Context, token, fileID string) (response.BoxFileCollaborationsResponse, error) {
+	var collaborations response.BoxFileCollaborationsResponse
+	if _, err := c.client.R().
+		SetAuthToken(token).
+		SetPathParams(map[string]string{
+			"fileID": fileID,
+		}).
+		SetResult(&collaborations).
+		Get("https://api.box.com/2.0/files/{fileID}/collaborations?limit=50"); err != nil {
+		return collaborations, err
+	}
+
+	return collaborations, nil
+}
+
+func (c *boxAPIClient) InviteUser(ctx context.Context, token, fileID, userEmail string, role BoxRole) error {
+	resp, err := c.client.R().
+		SetAuthToken(token).
+		SetBody(request.BoxCreateCollaboration{
+			Item: request.BoxCollaborationItem{
+				ID:   fileID,
+				Type: "file",
+			},
+			Access: request.BoxCollaborationAccess{
+				Type:  "user",
+				Login: userEmail,
+			},
+			Role: string(role),
+		}).
+		Post("https://api.box.com/2.0/collaborations?notify=true")
+
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode() != http.StatusCreated {
+		return ErrCouldNotInviteUser
+	}
+
+	return nil
 }
 
 func (c *boxAPIClient) GetFileInfo(
