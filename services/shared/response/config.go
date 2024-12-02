@@ -33,6 +33,7 @@ type BuildConfigResponse struct {
 	Token        string       `json:"token,omitempty"`
 	Session      bool         `json:"is_session,omitempty"`
 	ServerURL    string       `json:"server_url"`
+	Owner        bool         `json:"is_owner"`
 }
 
 func (r BuildConfigResponse) ToJSON() []byte {

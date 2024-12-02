@@ -85,17 +85,8 @@ func (c ConfigHandler) processConfig(
 	req request.BoxState,
 ) (response.BuildConfigResponse, error) {
 	var config response.BuildConfigResponse
-
-	var ures response.UserResponse
-	if err := c.client.Call(ctx, c.client.NewRequest(
-		fmt.Sprintf("%s:auth", c.server.Namespace),
-		"UserSelectHandler.GetUser", req.UserID,
-	), &ures); err != nil {
-		c.logger.Debugf("could not get user %s access info: %s", req.UserID, err.Error())
-		return config, err
-	}
-
 	var wg sync.WaitGroup
+
 	wg.Add(2)
 	errChan := make(chan error, 2)
 	userChan := make(chan response.BoxUserResponse, 1)
@@ -103,7 +94,7 @@ func (c ConfigHandler) processConfig(
 
 	go func() {
 		defer wg.Done()
-		userResp, err := c.boxClient.GetMe(ctx, ures.AccessToken)
+		userResp, err := c.boxClient.GetMe(ctx, user.AccessToken)
 		if err != nil {
 			errChan <- err
 			return
@@ -114,7 +105,7 @@ func (c ConfigHandler) processConfig(
 
 	go func() {
 		defer wg.Done()
-		fileResp, err := c.boxClient.GetFileInfo(ctx, ures.AccessToken, req.FileID)
+		fileResp, err := c.boxClient.GetFileInfo(ctx, user.AccessToken, req.FileID)
 		if err != nil {
 			errChan <- err
 			return
@@ -145,7 +136,7 @@ func (c ConfigHandler) processConfig(
 	file := <-fileChan
 	usr := <-userChan
 
-	url, err := c.boxClient.GetFilePublicUrl(ctx, ures.AccessToken, file.ID)
+	url, err := c.boxClient.GetFilePublicUrl(ctx, user.AccessToken, file.ID)
 	if err != nil {
 		return config, err
 	}
@@ -177,6 +168,7 @@ func (c ConfigHandler) processConfig(
 		},
 		Type:      eType,
 		ServerURL: c.onlyoffice.Onlyoffice.Builder.DocumentServerURL,
+		Owner:     usr.ID == file.CreatedBy.ID,
 	}
 
 	if strings.TrimSpace(filename) != "" {
