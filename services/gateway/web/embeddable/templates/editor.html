@@ -232,6 +232,13 @@
     document.addEventListener('alpine:init', () => {
         Alpine.store("invitations", {
             users: [],
+            async init() {
+              try {
+                await this.refreshUsers();
+              } catch {
+                console.error("Could not initialize users to mention");
+              }
+            },
             async refreshUsers() {
               const user = "{{ .User }}";
               const file = "{{ .File }}";
