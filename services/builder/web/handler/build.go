@@ -41,9 +41,9 @@ import (
 )
 
 var (
-	_ErrOperationTimeout   = errors.New("operation timeout")
-	_ErrFormatNotSupported = errors.New("current format is not supported")
-	group                  singleflight.Group
+	errOperationTimeout   = errors.New("operation timeout")
+	errFormatNotSupported = errors.New("current format is not supported")
+	group                 singleflight.Group
 )
 
 type ConfigHandler struct {
@@ -122,7 +122,7 @@ func (c ConfigHandler) processConfig(
 	case err := <-errChan:
 		return config, err
 	case <-ctx.Done():
-		return config, _ErrOperationTimeout
+		return config, errOperationTimeout
 	default:
 	}
 
@@ -174,7 +174,7 @@ func (c ConfigHandler) processConfig(
 	if strings.TrimSpace(filename) != "" {
 		format, supported := c.formatManager.GetFormatByName(file.Extension)
 		if !supported {
-			return config, _ErrFormatNotSupported
+			return config, errFormatNotSupported
 		}
 
 		config.Document.FileType = file.Extension
