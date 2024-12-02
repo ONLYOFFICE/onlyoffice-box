@@ -24,6 +24,7 @@ type BoxUserResponse struct {
 	ID       string `json:"id"`
 	Name     string `json:"name"`
 	Language string `json:"language"`
+	Timezone string `json:"timezone"`
 }
 
 func (u BoxUserResponse) ToJSON() []byte {

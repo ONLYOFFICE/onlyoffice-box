@@ -412,10 +412,15 @@ func (c FileController) convertFile(
 		folder = "0" // Root folder
 	}
 
+	location, err := time.LoadLocation(userInfo.Timezone)
+	if err != nil {
+		location = time.UTC
+	}
+
 	nresp, err := c.boxClient.CreateFile(
 		ctx, fmt.Sprintf("%s (%s).%s",
 			strings.TrimSuffix(fileInfo.Name, filepath.Ext(fileInfo.Name)),
-			time.Now().Format("2006-01-02 15:04:05.000"),
+			time.Now().In(location).Format("2006-01-02 15:04:05.000"),
 			cresp.FileType,
 		),
 		folder, ures.AccessToken, fresp.Body,
