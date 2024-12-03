@@ -343,7 +343,7 @@
                                     </p>
                                 </button>
                                 <button type="submit" class="button button_primary" style="flex-grow: 0; flex-basis: 0;"
-                                    :disabled="!action || loading">
+                                    :disabled="!action || loading || (!xmlType && autoconversionFailed)">
                                     <p class="buttontext">
                                         {{.openButton}}
                                     </p>
