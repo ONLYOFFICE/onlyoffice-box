@@ -51,8 +51,10 @@ import (
 )
 
 var (
-	errCsvIsNotSupported  = errors.New("csv conversion is not supported")
-	errFormatNotSupported = errors.New("format is not supported")
+	errCsvIsNotSupported         = errors.New("csv conversion is not supported")
+	errFormatNotSupported        = errors.New("format is not supported")
+	errConversionErrorOccurred   = errors.New("could not convert current file")
+	errConversionAutoFormatError = errors.New("could not detect xml format automatically")
 )
 
 type FileController struct {
@@ -246,7 +248,12 @@ func (c FileController) BuildConvertFile() http.HandlerFunc {
 			case "create":
 				nbody, err := c.convertFile(r.Context(), body)
 				if err != nil {
-					http.Redirect(rw, r, "https://app.box.com", http.StatusMovedPermanently)
+					if errors.Is(errConversionAutoFormatError, err) {
+						rw.WriteHeader(http.StatusBadRequest)
+						return nil, err
+					}
+
+					rw.WriteHeader(http.StatusInternalServerError)
 					return nil, err
 				}
 				http.Redirect(
@@ -398,6 +405,14 @@ func (c FileController) convertFile(
 	if err := json.NewDecoder(resp.Body).Decode(&cresp); err != nil {
 		c.logger.Errorf("could not decode convert response body: %s", err.Error())
 		return body, err
+	}
+
+	if cresp.Error == -9 {
+		return body, errConversionAutoFormatError
+	}
+
+	if cresp.Error < 0 {
+		return body, errConversionErrorOccurred
 	}
 
 	fresp, err := http.Get(cresp.FileURL)

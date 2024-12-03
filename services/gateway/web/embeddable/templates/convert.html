@@ -278,7 +278,7 @@
                                 </div>
                                 {{if .IsXML}}
                                 <div
-                                    x-show="action === 'create'"
+                                    x-show="action === 'create' && autoconversionFailed"
                                     x-cloak
                                     x-transition:enter="transition-all duration-300 ease-out"
                                     x-transition:enter-start="opacity-0 scale-90 transform"
@@ -295,10 +295,6 @@
                                         <label>
                                             <input type="radio" name="xmlType" value="xlsx" x-model="xmlType" class="hidden" />
                                             <span class="xml-type xlsx">{{ .spreadsheetType }}</span>
-                                        </label>
-                                        <label>
-                                            <input type="radio" name="xmlType" value="" x-model="xmlType" class="hidden" />
-                                            <span class="xml-type auto">{{ .autoType }}</span>
                                         </label>
                                     </div>
                                 </div>                      
@@ -369,11 +365,13 @@
         const token = "{{.CSRF}}";
         const user = "{{.User}}";
         const file = "{{.File}}";
+        const isXML = "{{.IsXML}}";
         function convertForm() {
             document.getElementById("conversion").hidden = false;
             document.getElementById("error").hidden = false;
             return {
                 action: '',
+                autoconversionFailed: false,
                 loading: false,
                 error: false,
                 tooltip: false,
@@ -409,6 +407,13 @@
                                 xml_type: this.xmlType
                             }),
                         });
+
+                        if (resp.status === 400 && isXML === 'true') {
+                            this.autoconversionFailed = true;
+                            this.loading = false;
+                            this.error = false;
+                            return;
+                        }
 
                         if (resp.status >= 300) throw new Error('could not convert a file');
 
