@@ -156,6 +156,14 @@
             box-shadow: 2px 2px 22px 0px #0000000D;
         }
 
+        #file-password {
+            padding: 0.3rem 0.4rem;
+            border: 1px solid gray;
+            border-radius: 6px;
+            width: 160px;
+            white-space: nowrap;
+        }
+
         .hidden {
             display: none;
         }
@@ -276,6 +284,19 @@
                                 <div style="padding-left: 1.25rem;">
                                     <span>{{.editCopy}}</span>
                                 </div>
+                                <div
+                                    x-cloak
+                                    x-show="action === 'create' && passwordRequired"
+                                    style="margin-top: .2rem; padding-left: 1.25rem;"
+                                >
+                                    <input
+                                        id="file-password"
+                                        type="password"
+                                        placeholder="{{.passwordRequired}}"
+                                        title="{{.passwordRequired}}"
+                                        x-model="password"
+                                    >
+                                </div>
                                 {{if .IsXML}}
                                 <div
                                     x-show="action === 'create' && autoconversionFailed"
@@ -372,6 +393,8 @@
             return {
                 action: '',
                 autoconversionFailed: false,
+                passwordRequired: false,
+                password: '',
                 loading: false,
                 error: false,
                 tooltip: false,
@@ -403,13 +426,22 @@
                                 action: this.action,
                                 user_id: user,
                                 file_id: file,
+                                password: this.password,
                                 force_edit: this.action === 'edit',
-                                xml_type: this.xmlType
+                                xml_type: this.xmlType,
                             }),
                         });
 
                         if (resp.status === 400 && isXML === 'true') {
                             this.autoconversionFailed = true;
+                            this.loading = false;
+                            this.error = false;
+                            return;
+                        }
+
+                        if (resp.status === 423) {
+                            this.passwordRequired = true;
+                            this.password = '';
                             this.loading = false;
                             this.error = false;
                             return;

@@ -51,10 +51,11 @@ import (
 )
 
 var (
-	errCsvIsNotSupported         = errors.New("csv conversion is not supported")
-	errFormatNotSupported        = errors.New("format is not supported")
-	errConversionErrorOccurred   = errors.New("could not convert current file")
-	errConversionAutoFormatError = errors.New("could not detect xml format automatically")
+	errCsvIsNotSupported               = errors.New("csv conversion is not supported")
+	errFormatNotSupported              = errors.New("format is not supported")
+	errConversionErrorOccurred         = errors.New("could not convert current file")
+	errConversionAutoFormatError       = errors.New("could not detect xml format automatically")
+	errConversionPasswordRequiredError = errors.New("could not convert protected file")
 )
 
 type FileController struct {
@@ -212,7 +213,7 @@ func (c FileController) BuildConvertPage() http.HandlerFunc {
 		messageIDs := []string{
 			"openOnlyoffice", "cannotOpen", "selectAction", "openView", "createOOXML", "editCopy",
 			"openEditing", "moreInfo", "dataRestrictions", "openButton", "cancelButton",
-			"errorMain", "errorSubtext", "reloadButton", "documentType", "spreadsheetType", "autoType",
+			"errorMain", "errorSubtext", "reloadButton", "documentType", "spreadsheetType", "passwordRequired",
 		}
 		localizedMessages := c.getLocalizedMessages(loc, messageIDs)
 
@@ -250,6 +251,11 @@ func (c FileController) BuildConvertFile() http.HandlerFunc {
 				if err != nil {
 					if errors.Is(errConversionAutoFormatError, err) {
 						rw.WriteHeader(http.StatusBadRequest)
+						return nil, err
+					}
+
+					if errors.Is(errConversionPasswordRequiredError, err) {
+						rw.WriteHeader(http.StatusLocked)
 						return nil, err
 					}
 
@@ -366,6 +372,7 @@ func (c FileController) convertFile(
 		Key:        string(c.hasher.Hash(fileInfo.ModifiedAt + fileInfo.ID)),
 		Filetype:   fileInfo.Extension,
 		Outputtype: outputType,
+		Password:   body.Password,
 		URL:        durl,
 		Region:     fmt.Sprintf("%s-%s", userInfo.Language, region),
 	}
@@ -409,6 +416,10 @@ func (c FileController) convertFile(
 
 	if cresp.Error == -9 {
 		return body, errConversionAutoFormatError
+	}
+
+	if cresp.Error == -5 {
+		return body, errConversionPasswordRequiredError
 	}
 
 	if cresp.Error < 0 {

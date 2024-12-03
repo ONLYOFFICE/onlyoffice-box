@@ -17,5 +17,5 @@
     "failedInvitation": "Could not invite users",
     "documentType": "Document",
     "spreadsheetType": "Spreadsheet",
-    "autoType": "Auto"
+    "passwordRequired": "File password required"
 }

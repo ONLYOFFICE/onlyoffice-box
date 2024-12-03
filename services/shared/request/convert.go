@@ -28,6 +28,7 @@ type ConvertRequestBody struct {
 	Action    string `json:"action"`
 	UserID    string `json:"user_id"`
 	FileID    string `json:"file_id"`
+	Password  string `json:"password"`
 	ForceEdit bool   `json:"force_edit"`
 	XmlType   string `json:"xml_type,omitempty"`
 }
@@ -43,6 +44,7 @@ type ConvertAPIRequest struct {
 	Key        string `json:"key"`
 	Filetype   string `json:"filetype"`
 	Outputtype string `json:"outputtype"`
+	Password   string `json:"password,omitempty"`
 	URL        string `json:"url"`
 	Token      string `json:"token,omitempty"`
 	Region     string `json:"region,omitempty"`
