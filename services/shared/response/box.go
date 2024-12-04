@@ -1,6 +1,6 @@
 /**
  *
- * (c) Copyright Ascensio System SIA 2023
+ * (c) Copyright Ascensio System SIA 2024
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,9 +24,29 @@ type BoxUserResponse struct {
 	ID       string `json:"id"`
 	Name     string `json:"name"`
 	Language string `json:"language"`
+	Timezone string `json:"timezone"`
 }
 
 func (u BoxUserResponse) ToJSON() []byte {
+	buf, _ := json.Marshal(u)
+	return buf
+}
+
+type BoxFileCollaborationsResponse struct {
+	Entries []struct {
+		ID           string `json:"id"`
+		AccessibleBy struct {
+			ID     string `json:"id"`
+			Type   string `json:"type"`
+			Active bool   `json:"is_active"`
+			Name   string `json:"name"`
+			Login  string `json:"login"`
+		} `json:"accessible_by"`
+		Role string `json:"role"`
+	} `json:"entries"`
+}
+
+func (u BoxFileCollaborationsResponse) ToJSON() []byte {
 	buf, _ := json.Marshal(u)
 	return buf
 }

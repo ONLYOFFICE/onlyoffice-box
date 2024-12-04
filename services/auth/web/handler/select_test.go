@@ -1,6 +1,6 @@
 /**
  *
- * (c) Copyright Ascensio System SIA 2023
+ * (c) Copyright Ascensio System SIA 2024
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,7 +50,7 @@ func TestSelectCaching(t *testing.T) {
 	service := service.NewUserService(adapter, mockEncryptor{}, cache,
 		&oauth2.Config{ClientSecret: "mock"}, log.NewEmptyLogger())
 
-	sel := NewUserSelectHandler(service, nil, shared.NewBoxAPIClient(), &oauth2.Config{}, log.NewEmptyLogger())
+	sel := NewUserSelectHandler(service, nil, shared.NewBoxAPIClient(cache), &oauth2.Config{}, log.NewEmptyLogger())
 
 	service.CreateUser(context.Background(), domain.UserAccess{
 		ID:           "mock",

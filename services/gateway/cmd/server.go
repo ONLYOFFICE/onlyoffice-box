@@ -1,6 +1,6 @@
 /**
  *
- * (c) Copyright Ascensio System SIA 2023
+ * (c) Copyright Ascensio System SIA 2024
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import (
 	"github.com/ONLYOFFICE/onlyoffice-box/services/gateway/web/controller"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/gateway/web/middleware"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared"
+	"github.com/ONLYOFFICE/onlyoffice-box/services/shared/format"
 	pkg "github.com/ONLYOFFICE/onlyoffice-integration-adapters"
 	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/crypto"
 	chttp "github.com/ONLYOFFICE/onlyoffice-integration-adapters/service/http"
@@ -50,13 +51,14 @@ func Server() *cli.Command {
 				CONFIG_PATH,
 				pkg.WithModules(
 					controller.NewAuthController, controller.NewEditorController,
-					controller.NewFileController,
+					controller.NewFileController, controller.NewShareController,
 					chttp.NewService, web.NewServer,
 					shared.BuildNewIntegrationCredentialsConfig(CONFIG_PATH),
 					shared.NewBoxAPIClient, shared.BuildNewOnlyofficeConfig(CONFIG_PATH),
 					crypto.NewStateGenerator,
 					middleware.NewSessionStore,
 					middleware.NewSessionMiddleware,
+					format.NewMapFormatManager,
 				),
 			).Bootstrap()
 

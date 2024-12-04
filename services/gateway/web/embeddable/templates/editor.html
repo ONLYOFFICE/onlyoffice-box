@@ -1,6 +1,6 @@
 <!--*
  *
- * (c) Copyright Ascensio System SIA 2023
+ * (c) Copyright Ascensio System SIA 2024
  *
  * The MIT License (MIT)
  *
@@ -33,31 +33,35 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <title>ONLYOFFICE</title>
-  <link rel="icon" href="/static/images/{{.docType}}.ico" type="image/x-icon" />
+  <link rel="icon" href="/static/images/{{.DocType}}.ico" type="image/x-icon" />
+  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
   <style>
     .container_button {
       display: flex;
       justify-content: center;
       align-items: center;
       height: 40px;
-      width: 119px;
-      padding: 12px 16px 12px 16px;
-      background-color: #0061D5;
+      padding: 12px 16px;
+      background-color: #0061d5;
       border-radius: 6px;
-      border-width: 0;
+      border: none;
       color: white;
       transition: all 0.2s ease-in;
       cursor: pointer;
+      margin: 5px;
     }
 
     .container_button:focus,
     .container_button:hover {
-      box-shadow: 0 12px 16px 0 rgba(0, 0, 0, 0.24), 0 17px 50px 0 rgba(0, 0, 0, 0.19);
+      box-shadow: 0 12px 16px 0 rgba(0, 0, 0, 0.24),
+        0 17px 50px 0 rgba(0, 0, 0, 0.19);
     }
 
-    html {
+    html,
+    body {
       height: 100%;
-      width: 100%;
+      margin: 0;
+      padding: 0;
     }
 
     body {
@@ -65,61 +69,272 @@
       color: #333;
       font-family: Arial, Tahoma, sans-serif;
       font-size: 12px;
-      font-weight: normal;
-      height: 100%;
-      margin: 0;
       overflow-y: hidden;
-      padding: 0;
-      text-decoration: none;
     }
 
     .form {
       height: 100%;
     }
 
-    div {
-      margin: 0;
-      padding: 0;
+    .popup {
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0, 0, 0, 0.5);
     }
 
-    .buttontext {
-      margin: 0;
-      width: 100px;
-      overflow: hidden;
-      white-space: nowrap;
-      display: block;
-      text-overflow: ellipsis;
+    .popup-content {
+      background-color: #fefefe;
+      margin: 5% auto;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 90%;
+      max-width: 500px;
+      border-radius: 10px;
+      text-align: center;
+    }
+
+    .close {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .close:hover,
+    .close:focus {
+      color: black;
+      text-decoration: none;
+    }
+
+    .user-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .user-item input,
+    .user-item select {
+      margin-right: 10px;
+      padding: 5px;
+      font-size: 14px;
+      flex: 1 1 40%;
+      margin-bottom: 5px;
+    }
+
+    .user-item button {
+      background: #ff4d4d;
+      border: none;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 12px;
+      flex: 1 1 15%;
+    }
+
+    .user-item button:hover {
+      background: #ff0000;
+    }
+
+    #userListContainer {
+      max-height: 50vh;
+      overflow-y: auto;
+      margin-bottom: 10px;
+    }
+
+    @media (max-width: 600px) {
+      .popup-content {
+        width: 95%;
+        margin: 10% auto;
+      }
+
+      .user-item {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .user-item input,
+      .user-item select,
+      .user-item button {
+        flex: 1 1 100%;
+        margin-bottom: 5px;
+      }
+
+      .user-item button {
+        align-self: flex-end;
+      }
     }
   </style>
 </head>
 
 <body>
   <div style="position: relative; width: 100vw; height: 100vh">
-    <div id="editor-form" class="form" style="position: absolute; width: 100vw; height: 100vh; visibility: hidden;">
+    <!-- <div id="notifyPopup" class="popup" x-data="sharePopup()" style="display: none;">
+      <div class="popup-content" x-init="fetchCollaborations()">
+        <span class="close" @click="closePopup()">&times;</span>
+        <h3>Share Document</h3>
+        <div id="userListContainer">
+          <template x-for="(user, index) in users" :key="index">
+            <div class="user-item">
+              <input type="email" x-model="user.email" placeholder="Enter email" required>
+              <select x-model="user.role">
+                <option value="editor">Editor</option>
+                <option value="viewer">Viewer</option>
+              </select>
+              <button type="button" @click="removeUser(index)">Remove</button>
+            </div>
+          </template>
+        </div>
+        <button class="container_button" @click="addUser()">Add User</button>
+        <button class="container_button" @click="submitUsers()">Submit</button>
+      </div>
+    </div> -->
+
+    <div id="editor-form" class="form" style="
+          position: absolute;
+          width: 100vw;
+          height: 100vh;
+          visibility: hidden;
+        ">
       <div id="iframeEditor"></div>
     </div>
-    <div class="container" style="z-index: 1;">
-      <div
-        style="position: relative; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; flex-direction: column;">
+    <div class="container" style="z-index: 1">
+      <div style="
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+          ">
         {{template "spinner"}}
       </div>
-      <button class="container_button" onclick="window.parent.close()" style="margin-top: 2rem; width: 110px;">
-        <p class="buttontext">
-          {{.cancelButton}}
-        </p>
+      <button class="container_button" onclick="window.parent.close()" style="margin-top: 2rem">
+        <p class="buttontext">{{.CancelButton}}</p>
       </button>
     </div>
   </div>
   <script type="text/javascript" src="{{ .apijs }}"></script>
   <script type="text/javascript" language="javascript">
-    var docEditor;
+    let docEditor;
+    let config = {{ .Config }};
+    let owner = {{ .Owner }};
 
-    var innerAlert = function (message) {
+    document.addEventListener('alpine:init', () => {
+        Alpine.store("invitations", {
+            users: [],
+            async init() {
+              try {
+                await this.refreshUsers();
+              } catch {
+                console.error("Could not initialize users to mention");
+              }
+            },
+            async refreshUsers() {
+              const user = "{{ .User }}";
+              const file = "{{ .File }}";
+              const response = await fetch(`/api/users/invitations?user=${user}&file=${file}`);
+              const data = await response.json();
+              this.users = data.entries.map((entry) => {
+                return {
+                  id: entry.id,
+                  name: entry.accessible_by.name,
+                  email: entry.accessible_by.login,
+                  editor: entry.role === "editor",
+                };
+              });
+            },
+            async inviteUsers(payload) {
+              const message = "{{ .SuccessfulInvitation }}"
+              const token = "{{ .CSRF }}";
+              const user = "{{ .User }}";
+              const invitedUsers = this.users.map((u) => u.email);
+              const userInvitations = payload.users.filter((u) => !invitedUsers.includes(u.email));
+              if (userInvitations.length > 0) {
+                  await fetch(`/api/users/invite?user=${user}`, {
+                      method: 'POST',
+                      headers: {
+                          'Content-Type': 'application/json',
+                          "X-CSRF-Token": token,
+                      },
+                      body: JSON.stringify({
+                        file: payload.file,
+                        users: userInvitations,
+                      }),
+                  });
+                  await this.refreshUsers();
+                  docEditor.showMessage(message);
+              }
+            },
+        });
+    })
+    // function sharePopup() {
+    //   return {
+    //     isOpen: false,
+    //     users: [],
+    //     user: "{{ .user }}",
+    //     file: "{{ .file }}",
+    //     token: "{{ .CSRF }}",
+    //     async fetchCollaborations() {
+    //       const response = await fetch(`/api/users/invite?user=${this.user}&file=${this.file}`);
+    //       const data = await response.json();
+    //       console.log(data);
+    //       this.users = data.entries.map((entry) => {
+    //         return {
+    //           email: entry.accessible_by.login,
+    //           role: entry.role,
+    //         };
+    //       })
+    //     },
+    //     addUser() {
+    //       this.users.push({ email: '', role: 'editor' });
+    //     },
+    //     removeUser(index) {
+    //       this.users.splice(index, 1);
+    //     },
+    //     async submitUsers() {
+    //       const file = this.file;
+    //       const payload = {
+    //         file,
+    //         users: this.users.map((user) => {
+    //           return {
+    //             ...user,
+    //             editor: user.role === 'editor',
+    //           };
+    //         }),
+    //       };
+
+    //       const res = await fetch(`/api/users/invite?user=${this.user}`, {
+    //         method: 'POST',
+    //         headers: {
+    //           'Content-Type': 'application/json',
+    //           "X-CSRF-Token": this.token,
+    //         },
+    //         body: JSON.stringify(payload),
+    //       })
+    //       this.closePopup();
+    //     },
+    //     closePopup() {
+    //       document.getElementById('notifyPopup').style.display = 'none';
+    //     }
+    //   };
+    // }
+
+    const innerAlert = function (message) {
       if (console && console.log)
         console.log(message);
     };
 
-    var onAppReady = function () {  // the application is loaded into the browser
+    const onAppReady = async () => {
       innerAlert("Document editor ready");
       document.getElementsByClassName('container').item(0).remove();
       setTimeout(() => {
@@ -127,7 +342,7 @@
       }, 150);
     };
 
-    var onRequestClose = function () {
+    const onRequestClose = function () {
       if (window.opener) {
         window.close();
         return;
@@ -135,21 +350,58 @@
       docEditor.destroyEditor();
     };
 
-    var events = {
-      "onAppReady": onAppReady,
-      "onRequestClose": onRequestClose,
+    function onRequestUsers(evt) {
+      docEditor.setUsers({
+        "c": "mention",
+        "users": Alpine.store('invitations').users,
+      });
     };
 
-    var config = {{ .config }};
+    // const onRequestSharingSettings = async () => {
+    //   document.getElementById('notifyPopup').style.display = 'block';
+    // }
+
+    const onRequestSendNotify = async (evt) => {
+      const message = "{{ .FailedInvitation }}";
+      const file = "{{ .File }}";
+      const { emails } = evt.data;
+      const payload = {
+        file,
+        users: emails.map((email) => {
+          return {
+            email,
+            editor: false,
+          };
+        }),
+      };
+      try {
+        await Alpine.store("invitations").inviteUsers(payload);
+        docEditor.setUsers({
+          "c": "mention",
+          "users": Alpine.store('invitations').users,
+        });
+      } catch {
+        docEditor.showMessage(message)
+      }
+    };
+
+    const events = {
+      "onAppReady": onAppReady,
+      "onRequestClose": onRequestClose,
+      "onRequestUsers": onRequestUsers,
+      "onRequestSendNotify": onRequestSendNotify,
+      // ...(owner && { "onRequestSharingSettings": onRequestSharingSettings })
+    };
+
     config["events"] = events;
 
-    var connectEditor = function () {
+    const connectEditor = function () {
       docEditor = new DocsAPI.DocEditor("iframeEditor", config);
       fixSize();
     };
 
-    var fixSize = function () {
-      var wrapEl = document.getElementsByClassName("form");
+    const fixSize = function () {
+      let wrapEl = document.getElementsByClassName("form");
       if (wrapEl.length) {
         wrapEl[0].style.height = screen.availHeight + "px";
         window.scrollTo(0, -1);

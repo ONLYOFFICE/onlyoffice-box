@@ -1,6 +1,6 @@
 /**
  *
- * (c) Copyright Ascensio System SIA 2023
+ * (c) Copyright Ascensio System SIA 2024
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,10 +42,31 @@ type BoxState struct {
 	UserID    string `json:"user_id" mapstructure:"user_id"`
 	FileID    string `json:"file_id" mapstructure:"file_id"`
 	UserAgent string `json:"user_agent" mapstructure:"user_agent"`
-	ForceEdit bool   `json:"force_edit,omitmepty"`
+	ForceEdit bool   `json:"force_edit,omitempty"`
 }
 
 func (u BoxState) ToJSON() []byte {
+	buf, _ := json.Marshal(u)
+	return buf
+}
+
+type BoxCollaborationItem struct {
+	ID   string `json:"id"`
+	Type string `json:"type"`
+}
+
+type BoxCollaborationAccess struct {
+	Type  string `json:"type"`
+	Login string `json:"login"`
+}
+
+type BoxCreateCollaboration struct {
+	Item   BoxCollaborationItem   `json:"item"`
+	Access BoxCollaborationAccess `json:"accessible_by"`
+	Role   string                 `json:"role"`
+}
+
+func (u BoxCreateCollaboration) ToJSON() []byte {
 	buf, _ := json.Marshal(u)
 	return buf
 }

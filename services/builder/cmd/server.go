@@ -1,6 +1,6 @@
 /**
  *
- * (c) Copyright Ascensio System SIA 2023
+ * (c) Copyright Ascensio System SIA 2024
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import (
 	"github.com/ONLYOFFICE/onlyoffice-box/services/builder/web"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/builder/web/handler"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared"
+	"github.com/ONLYOFFICE/onlyoffice-box/services/shared/format"
 	pkg "github.com/ONLYOFFICE/onlyoffice-integration-adapters"
 	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/service/rpc"
 	"github.com/urfave/cli/v2"
@@ -50,6 +51,7 @@ func Server() *cli.Command {
 					shared.BuildNewIntegrationCredentialsConfig(CONFIG_PATH),
 					handler.NewConfigHandler, rpc.NewService, web.NewConfigRPCServer,
 					shared.NewBoxAPIClient,
+					format.NewMapFormatManager,
 				),
 			).Bootstrap()
 

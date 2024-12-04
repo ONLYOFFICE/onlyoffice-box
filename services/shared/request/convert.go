@@ -1,6 +1,6 @@
 /**
  *
- * (c) Copyright Ascensio System SIA 2023
+ * (c) Copyright Ascensio System SIA 2024
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,9 @@ type ConvertRequestBody struct {
 	Action    string `json:"action"`
 	UserID    string `json:"user_id"`
 	FileID    string `json:"file_id"`
+	Password  string `json:"password"`
 	ForceEdit bool   `json:"force_edit"`
+	XmlType   string `json:"xml_type,omitempty"`
 }
 
 func (r ConvertRequestBody) ToJSON() []byte {
@@ -42,8 +44,10 @@ type ConvertAPIRequest struct {
 	Key        string `json:"key"`
 	Filetype   string `json:"filetype"`
 	Outputtype string `json:"outputtype"`
+	Password   string `json:"password,omitempty"`
 	URL        string `json:"url"`
 	Token      string `json:"token,omitempty"`
+	Region     string `json:"region,omitempty"`
 }
 
 func (r ConvertAPIRequest) ToJSON() []byte {

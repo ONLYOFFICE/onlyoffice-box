@@ -12,5 +12,10 @@
     "openView": "Abrir o arquivo apenas para visualização",
     "selectAction": "Por favor, selecione a ação:",
     "cannotOpen": "Este tipo de arquivo não pode ser aberto corretamente.",
-    "openOnlyoffice": "Abrir com o ONLYOFFICE"
+    "openOnlyoffice": "Abrir com o ONLYOFFICE",
+    "successfulInvitation": "Successfully sent invitations",
+    "failedInvitation": "Could not invite users",
+    "documentType": "Document",
+    "spreadsheetType": "Spreadsheet",
+    "passwordRequired": "File password required"
 }

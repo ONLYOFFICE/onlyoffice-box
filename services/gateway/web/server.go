@@ -1,6 +1,6 @@
 /**
  *
- * (c) Copyright Ascensio System SIA 2023
+ * (c) Copyright Ascensio System SIA 2024
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ type BoxHTTPService struct {
 	authController    controller.AuthController
 	editorController  controller.EditorController
 	fileController    controller.FileController
+	shareController   controller.ShareController
 	sessionMiddleware middleware.SessionMiddleware
 	csrfMiddleware    func(http.Handler) http.Handler
 }
@@ -44,6 +45,7 @@ func NewServer(
 	authController controller.AuthController,
 	editorController controller.EditorController,
 	fileController controller.FileController,
+	shareController controller.ShareController,
 	sessionMiddleware middleware.SessionMiddleware,
 	credentials *oauth2.Config,
 ) shttp.ServerEngine {
@@ -52,6 +54,7 @@ func NewServer(
 		authController:    authController,
 		editorController:  editorController,
 		fileController:    fileController,
+		shareController:   shareController,
 		sessionMiddleware: sessionMiddleware,
 		csrfMiddleware: csrf.Protect(
 			[]byte(credentials.ClientSecret),
@@ -85,13 +88,20 @@ func (s *BoxHTTPService) InitializeServer() *chi.Mux {
 // InitializeRoutes builds all http routes.
 func (s *BoxHTTPService) InitializeRoutes() {
 	fs := http.FileServer(http.Dir("services/gateway/static"))
+	sizeMiddleware := middleware.MaxPayloadSizeMiddleware(1 * 1024 * 1024)
 	s.mux.Group(func(r chi.Router) {
 		r.Use(chimiddleware.Recoverer, chimiddleware.NoCache)
 
 		r.Handle("/static/*", http.StripPrefix("/static/", fs))
 
+		r.Route("/api", func(cr chi.Router) {
+			cr.Use(s.sessionMiddleware.Protect, sizeMiddleware, s.csrfMiddleware)
+			cr.Get("/users/invitations", s.shareController.BuildGetInvitations())
+			cr.Post("/users/invite", s.shareController.BuildInviteUser())
+		})
+
 		r.Route("/", func(cr chi.Router) {
-			cr.Use(s.sessionMiddleware.Protect, s.csrfMiddleware)
+			cr.Use(s.sessionMiddleware.Protect, sizeMiddleware, s.csrfMiddleware)
 			cr.Get("/editor", s.editorController.BuildGetEditor())
 			cr.Get("/convert", s.fileController.BuildConvertPage())
 			cr.Post("/convert", s.fileController.BuildConvertFile())

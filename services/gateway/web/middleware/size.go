@@ -16,17 +16,21 @@
  *
  */
 
-package port
+package middleware
 
-import (
-	"context"
+import "net/http"
 
-	"github.com/ONLYOFFICE/onlyoffice-box/services/auth/web/core/domain"
-)
+func MaxPayloadSizeMiddleware(limit int64) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+			if r.ContentLength > 0 {
+				if r.ContentLength > limit {
+					rw.WriteHeader(http.StatusRequestEntityTooLarge)
+					return
+				}
+			}
 
-type UserAccessService interface {
-	CreateUser(ctx context.Context, user domain.UserAccess) error
-	GetUser(ctx context.Context, uid string) (domain.UserAccess, error)
-	UpdateUser(ctx context.Context, user domain.UserAccess) (domain.UserAccess, error)
-	DeleteUser(ctx context.Context, uid string) error
+			next.ServeHTTP(rw, r)
+		})
+	}
 }
