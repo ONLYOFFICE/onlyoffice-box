@@ -1,5 +1,15 @@
 # Change Log
 
+##
+## Added
+- users invitation on mention
+- region in conversion calls
+- handle password protected files in conversion
+- handle convertsion output type error
+
+## Changed
+- extended list of supported formats
+
 ## 1.0.1
 ## Changed
 - update of vulnerable dependencies
