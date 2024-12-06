@@ -13,9 +13,9 @@
     "selectAction": "Por favor, seleccione la acción:",
     "cannotOpen": "Este tipo de archivo no se puede abrir correctamente.",
     "openOnlyoffice": "Abrir con ONLYOFFICE",
-    "successfulInvitation": "Successfully sent invitations",
-    "failedInvitation": "Could not invite users",
-    "documentType": "Document",
-    "spreadsheetType": "Spreadsheet",
-    "passwordRequired": "File password required"
+    "successfulInvitation": "Invitaciones enviadas correctamente",
+    "failedInvitation": "No se ha podido invitar a usuarios",
+    "documentType": "Documento",
+    "spreadsheetType": "Hoja de cálculo",
+    "passwordRequired": "Se requiere contraseña para el archivo"
 }
