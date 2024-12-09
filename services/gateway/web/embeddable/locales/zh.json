@@ -13,9 +13,9 @@
     "selectAction": "请选择操作：",
     "cannotOpen": "无法正常打开此文件类型。",
     "openOnlyoffice": "使用 ONLYOFFICE 打开",
-    "successfulInvitation": "Successfully sent invitations",
-    "failedInvitation": "Could not invite users",
-    "documentType": "Document",
-    "spreadsheetType": "Spreadsheet",
-    "passwordRequired": "File password required"
+    "successfulInvitation": "邀请已成功发送",
+    "failedInvitation": "无法邀请用户",
+    "documentType": "文本文档",
+    "spreadsheetType": "电子表格",
+    "passwordRequired": "需要文件密码"
 }

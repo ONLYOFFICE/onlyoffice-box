@@ -13,9 +13,9 @@
     "selectAction": "Пожалуйста, выберите действие:",
     "cannotOpen": "Файлы данного типа не могут быть открыты правильно.",
     "openOnlyoffice": "Открыть с помощью ONLYOFFICE",
-    "successfulInvitation": "Successfully sent invitations",
-    "failedInvitation": "Could not invite users",
-    "documentType": "Document",
-    "spreadsheetType": "Spreadsheet",
-    "passwordRequired": "File password required"
+    "successfulInvitation": "Приглашения успешно отправлены",
+    "failedInvitation": "Не удалось пригласить пользователей",
+    "documentType": "Документ",
+    "spreadsheetType": "Электронная таблица",
+    "passwordRequired": "Требуется пароль для файла"
 }
