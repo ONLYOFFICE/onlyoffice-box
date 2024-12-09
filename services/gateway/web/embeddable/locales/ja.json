@@ -13,9 +13,9 @@
     "selectAction": "アクションを選択してください：",
     "cannotOpen": "このファイルタイプは正しく開くことができません。",
     "openOnlyoffice": "ONLYOFFICEで開く",
-    "successfulInvitation": "Successfully sent invitations",
-    "failedInvitation": "Could not invite users",
-    "documentType": "Document",
-    "spreadsheetType": "Spreadsheet",
-    "passwordRequired": "File password required"
+    "successfulInvitation": "招待メッセージが送信されました",
+    "failedInvitation": "ユーザーを招待できませんでした",
+    "documentType": "ドキュメント",
+    "spreadsheetType": "スプレッドシート",
+    "passwordRequired": "ファイルへのパスワードが必要です"
 }
