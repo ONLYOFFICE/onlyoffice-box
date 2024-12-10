@@ -17,5 +17,6 @@
     "failedInvitation": "无法邀请用户",
     "documentType": "文本文档",
     "spreadsheetType": "电子表格",
-    "passwordRequired": "需要文件密码"
+    "passwordRequired": "需要文件密码",
+    "xmlInformation": "Please choose the type you want open:"
 }

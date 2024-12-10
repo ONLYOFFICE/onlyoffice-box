@@ -17,5 +17,6 @@
     "failedInvitation": "Não foi possível convidar usuários",
     "documentType": "Documento",
     "spreadsheetType": "Planilha",
-    "passwordRequired": "Senha do arquivo necessária"
+    "passwordRequired": "Senha do arquivo necessária",
+    "xmlInformation": "Please choose the type you want open:"
 }

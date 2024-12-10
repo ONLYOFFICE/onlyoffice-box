@@ -17,5 +17,6 @@
     "failedInvitation": "ユーザーを招待できませんでした",
     "documentType": "ドキュメント",
     "spreadsheetType": "スプレッドシート",
-    "passwordRequired": "ファイルへのパスワードが必要です"
+    "passwordRequired": "ファイルへのパスワードが必要です",
+    "xmlInformation": "Please choose the type you want open:"
 }

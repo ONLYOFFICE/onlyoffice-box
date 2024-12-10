@@ -17,5 +17,6 @@
     "failedInvitation": "No se ha podido invitar a usuarios",
     "documentType": "Documento",
     "spreadsheetType": "Hoja de cálculo",
-    "passwordRequired": "Se requiere contraseña para el archivo"
+    "passwordRequired": "Se requiere contraseña para el archivo",
+    "xmlInformation": "Please choose the type you want open:"
 }

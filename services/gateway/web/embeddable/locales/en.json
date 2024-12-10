@@ -17,5 +17,6 @@
     "failedInvitation": "Could not invite users",
     "documentType": "Document",
     "spreadsheetType": "Spreadsheet",
-    "passwordRequired": "File password required"
+    "passwordRequired": "File password required",
+    "xmlInformation": "Please choose the type you want open:"
 }
