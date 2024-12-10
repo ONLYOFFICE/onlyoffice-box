@@ -18,5 +18,7 @@
     "documentType": "Dokument",
     "spreadsheetType": "Tabellenkalkulation",
     "passwordRequired": "Dateipasswort erforderlich",
+    "passwordInformation": "The file copy will not be password protected",
+    "passwordInvalid": "Incorrect password",
     "xmlInformation": "Please choose the type you want open:"
 }

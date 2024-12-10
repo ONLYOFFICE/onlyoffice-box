@@ -214,7 +214,7 @@ func (c FileController) BuildConvertPage() http.HandlerFunc {
 			"openOnlyoffice", "cannotOpen", "selectAction", "openView", "createOOXML", "editCopy",
 			"openEditing", "moreInfo", "dataRestrictions", "openButton", "cancelButton",
 			"errorMain", "errorSubtext", "reloadButton", "documentType", "spreadsheetType",
-			"passwordRequired", "xmlInformation",
+			"passwordRequired", "passwordInformation", "passwordInvalid", "xmlInformation",
 		}
 		localizedMessages := c.getLocalizedMessages(loc, messageIDs)
 
