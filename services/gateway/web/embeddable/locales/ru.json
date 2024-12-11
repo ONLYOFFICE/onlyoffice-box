@@ -17,5 +17,8 @@
     "failedInvitation": "Не удалось пригласить пользователей",
     "documentType": "Документ",
     "spreadsheetType": "Электронная таблица",
-    "passwordRequired": "Требуется пароль для файла"
+    "passwordRequired": "Требуется пароль для файла",
+    "passwordInformation": "The file copy will not be password protected",
+    "passwordInvalid": "Incorrect password",
+    "xmlInformation": "Please choose the type you want open:"
 }
