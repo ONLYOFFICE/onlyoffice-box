@@ -1,6 +1,6 @@
 # Change Log
 
-##
+## 1.1.0
 ## Added
 - users invitation on mention
 - region in conversion calls
