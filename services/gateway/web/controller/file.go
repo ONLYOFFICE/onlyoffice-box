@@ -93,6 +93,15 @@ func NewFileController(
 	}
 }
 
+func (c FileController) sanitizeLanguageTag(tag string) string {
+	tag = strings.ToLower(tag)
+	switch tag {
+	case "gb":
+		return "en-GB"
+	}
+	return tag
+}
+
 func (c FileController) saveRedirectURL(rw http.ResponseWriter, r *http.Request) {
 	session, _ := c.store.Get(r, "url")
 	session.Values["redirect"] = c.onlyoffice.Onlyoffice.Builder.GatewayURL + r.URL.String()
@@ -360,6 +369,7 @@ func (c FileController) convertFile(
 		outputType = body.XmlType
 	}
 
+	userInfo.Language = c.sanitizeLanguageTag(userInfo.Language)
 	tag, err := language.Parse(userInfo.Language)
 	if err != nil {
 		return body, err
