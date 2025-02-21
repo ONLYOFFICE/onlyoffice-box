@@ -1,6 +1,6 @@
 /**
  *
- * (c) Copyright Ascensio System SIA 2023
+ * (c) Copyright Ascensio System SIA 2024
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import (
 	"github.com/ONLYOFFICE/onlyoffice-box/services/callback/web"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/callback/web/controller"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared"
+	"github.com/ONLYOFFICE/onlyoffice-box/services/shared/format"
 	pkg "github.com/ONLYOFFICE/onlyoffice-integration-adapters"
 	chttp "github.com/ONLYOFFICE/onlyoffice-integration-adapters/service/http"
 	"github.com/urfave/cli/v2"
@@ -51,6 +52,7 @@ func Server() *cli.Command {
 					shared.BuildNewIntegrationCredentialsConfig(CONFIG_PATH),
 					controller.NewCallbackController,
 					shared.NewBoxAPIClient,
+					format.NewMapFormatManager,
 				)).Bootstrap()
 
 			if err := app.Err(); err != nil {

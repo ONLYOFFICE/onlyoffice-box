@@ -12,5 +12,13 @@
     "openView": "Открыть файл только для просмотра",
     "selectAction": "Пожалуйста, выберите действие:",
     "cannotOpen": "Файлы данного типа не могут быть открыты правильно.",
-    "openOnlyoffice": "Открыть с помощью ONLYOFFICE"
+    "openOnlyoffice": "Открыть с помощью ONLYOFFICE",
+    "successfulInvitation": "Приглашения успешно отправлены",
+    "failedInvitation": "Не удалось пригласить пользователей",
+    "documentType": "Документ",
+    "spreadsheetType": "Электронная таблица",
+    "passwordRequired": "Требуется пароль для файла",
+    "passwordInformation": "Копия файла не будет защищена паролем.",
+    "passwordInvalid": "Неправильный пароль",
+    "xmlInformation": "Пожалуйста, выберите тип, который вы хотите открыть:"
 }

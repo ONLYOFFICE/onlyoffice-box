@@ -1,6 +1,6 @@
 /**
  *
- * (c) Copyright Ascensio System SIA 2023
+ * (c) Copyright Ascensio System SIA 2024
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import (
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared/response"
 	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/config"
 	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/log"
+	"github.com/gorilla/csrf"
 	"github.com/gorilla/sessions"
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"go-micro.dev/v4/client"
@@ -56,58 +57,79 @@ func NewEditorController(
 	}
 }
 
+func getUserLanguage(session *sessions.Session) string {
+	if lang, ok := session.Values["locale"].(string); ok {
+		return lang
+	}
+
+	return "en"
+}
+
+func (c EditorController) renderLocalizedErrorPage(rw http.ResponseWriter, loc *i18n.Localizer, err error) {
+	errMsg := map[string]interface{}{
+		"errorMain":    loc.MustLocalize(&i18n.LocalizeConfig{MessageID: "errorMain"}),
+		"errorSubtext": loc.MustLocalize(&i18n.LocalizeConfig{MessageID: "errorSubtext"}),
+		"reloadButton": loc.MustLocalize(&i18n.LocalizeConfig{MessageID: "reloadButton"}),
+	}
+	c.logger.Warnf("rendering localized error page due to: %v", err)
+	embeddable.ErrorPage.ExecuteTemplate(rw, "error", errMsg)
+}
+
 func (c EditorController) BuildGetEditor() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		var state request.ConvertRequestBody
-		session, err := c.store.Get(r, "onlyoffice-auth")
-		lang := "en"
-		if err == nil {
-			if ln, ok := session.Values["locale"].(string); ok {
-				lang = ln
-			}
-		}
-
+		session, _ := c.store.Get(r, "onlyoffice-auth")
+		lang := getUserLanguage(session)
 		loc := i18n.NewLocalizer(embeddable.Bundle, lang)
-		errMsg := map[string]interface{}{
-			"errorMain": loc.MustLocalize(&i18n.LocalizeConfig{
-				MessageID: "errorMain",
-			}),
-			"errorSubtext": loc.MustLocalize(&i18n.LocalizeConfig{
-				MessageID: "errorSubtext",
-			}),
-			"reloadButton": loc.MustLocalize(&i18n.LocalizeConfig{
-				MessageID: "reloadButton",
-			}),
-		}
-
+		var state request.ConvertRequestBody
 		if err := json.Unmarshal([]byte(r.URL.Query().Get("state")), &state); err != nil {
-			embeddable.ErrorPage.ExecuteTemplate(rw, "error", errMsg)
+			c.renderLocalizedErrorPage(rw, loc, err)
 			return
 		}
 
-		tctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
-		defer cancel()
-		var config response.BuildConfigResponse
-		if err := c.client.Call(tctx, c.client.NewRequest(
-			fmt.Sprintf("%s:builder", c.server.Namespace), "ConfigHandler.BuildConfig", request.BoxState{
-				UserID:    state.UserID,
-				FileID:    state.FileID,
-				UserAgent: r.UserAgent(),
-				ForceEdit: state.ForceEdit,
-			}), &config, client.WithRetries(3)); err != nil {
-			c.logger.Errorf("could not build an editor config: %s", err.Error())
-			embeddable.ErrorPage.ExecuteTemplate(rw, "error", errMsg)
-			return
-		}
+		group.Do(fmt.Sprintf("%s:%s", state.UserID, state.FileID), func() (interface{}, error) {
+			tctx, cancel := context.WithTimeout(r.Context(), 8*time.Second)
+			defer cancel()
+			var config response.BuildConfigResponse
+			if err := c.client.Call(
+				tctx,
+				c.client.NewRequest(
+					fmt.Sprintf("%s:builder", c.server.Namespace),
+					"ConfigHandler.BuildConfig",
+					request.BoxState{
+						UserID:    state.UserID,
+						FileID:    state.FileID,
+						UserAgent: r.UserAgent(),
+						ForceEdit: state.ForceEdit,
+					},
+				),
+				&config,
+				client.WithRetries(3),
+			); err != nil {
+				c.renderLocalizedErrorPage(rw, loc, err)
+				return nil, err
+			}
 
-		rw.Header().Set("Content-Type", "text/html")
-		embeddable.EditorPage.Execute(rw, map[string]interface{}{
-			"apijs":   fmt.Sprintf("%s/web-apps/apps/api/documents/api.js", config.ServerURL),
-			"config":  string(config.ToJSON()),
-			"docType": config.DocumentType,
-			"cancelButton": loc.MustLocalize(&i18n.LocalizeConfig{
-				MessageID: "cancelButton",
-			}),
+			rw.Header().Set("Content-Type", "text/html")
+			embeddable.EditorPage.Execute(rw, map[string]interface{}{
+				"apijs":   fmt.Sprintf("%s/web-apps/apps/api/documents/api.js", config.ServerURL),
+				"CSRF":    csrf.Token(r),
+				"Config":  string(config.ToJSON()),
+				"User":    state.UserID,
+				"File":    state.FileID,
+				"Owner":   config.Owner,
+				"DocType": config.DocumentType,
+				"CancelButton": loc.MustLocalize(&i18n.LocalizeConfig{
+					MessageID: "cancelButton",
+				}),
+				"SuccessfulInvitation": loc.MustLocalize(&i18n.LocalizeConfig{
+					MessageID: "successfulInvitation",
+				}),
+				"FailedInvitation": loc.MustLocalize(&i18n.LocalizeConfig{
+					MessageID: "failedInvitation",
+				}),
+			})
+
+			return nil, nil
 		})
 	}
 }

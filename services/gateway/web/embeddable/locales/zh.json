@@ -12,5 +12,13 @@
     "openView": "打开文件仅供查看",
     "selectAction": "请选择操作：",
     "cannotOpen": "无法正常打开此文件类型。",
-    "openOnlyoffice": "使用 ONLYOFFICE 打开"
+    "openOnlyoffice": "使用 ONLYOFFICE 打开",
+    "successfulInvitation": "邀请已成功发送",
+    "failedInvitation": "无法邀请用户",
+    "documentType": "文本文档",
+    "spreadsheetType": "电子表格",
+    "passwordRequired": "需要文件密码",
+    "passwordInformation": "文件副本将不会受到密码保护",
+    "passwordInvalid": "密码错误",
+    "xmlInformation": "请选择您想要打开的类型："
 }

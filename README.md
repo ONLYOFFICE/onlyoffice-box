@@ -1,6 +1,6 @@
-# ONLYOFFICE Integration App for Box
+# ONLYOFFICE app for Box
 
-ONLYOFFICE integration app for Box allows working with office files directly within [Box](https://www.box.com/).
+ONLYOFFICE app for Box allows working with office files directly within [Box](https://www.box.com/).
 
 ## How it works
 

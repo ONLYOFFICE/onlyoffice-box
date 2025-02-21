@@ -16,17 +16,14 @@
  *
  */
 
-package port
+package request
 
-import (
-	"context"
+type InviteUserRequest struct {
+	FileID string            `json:"file"`
+	Users  []InviteUserEntry `json:"users"`
+}
 
-	"github.com/ONLYOFFICE/onlyoffice-box/services/auth/web/core/domain"
-)
-
-type UserAccessService interface {
-	CreateUser(ctx context.Context, user domain.UserAccess) error
-	GetUser(ctx context.Context, uid string) (domain.UserAccess, error)
-	UpdateUser(ctx context.Context, user domain.UserAccess) (domain.UserAccess, error)
-	DeleteUser(ctx context.Context, uid string) error
+type InviteUserEntry struct {
+	Email  string `json:"email"`
+	Editor bool   `json:"editor"`
 }

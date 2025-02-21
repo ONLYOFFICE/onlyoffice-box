@@ -1,6 +1,6 @@
 /**
  *
- * (c) Copyright Ascensio System SIA 2023
+ * (c) Copyright Ascensio System SIA 2024
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ import (
 
 	"github.com/ONLYOFFICE/onlyoffice-box/services/callback/web/controller"
 	chttp "github.com/ONLYOFFICE/onlyoffice-integration-adapters/service/http"
-	"github.com/gin-gonic/gin"
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
 )
@@ -42,8 +41,6 @@ func (s CallbackService) ApplyMiddleware(middlewares ...func(http.Handler) http.
 func NewServer(
 	callbackController controller.CallbackController,
 ) chttp.ServerEngine {
-	gin.SetMode(gin.ReleaseMode)
-
 	service := CallbackService{
 		mux:               chi.NewRouter(),
 		callbackConroller: callbackController,

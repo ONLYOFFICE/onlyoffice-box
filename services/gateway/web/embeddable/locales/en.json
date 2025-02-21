@@ -12,5 +12,13 @@
     "openView": "Open the file for viewing only",
     "selectAction": "Please select the action:",
     "cannotOpen": "This file type cannot be opened correctly.",
-    "openOnlyoffice": "Open with ONLYOFFICE"
+    "openOnlyoffice": "Open with ONLYOFFICE",
+    "successfulInvitation": "Successfully sent invitations",
+    "failedInvitation": "Could not invite users",
+    "documentType": "Document",
+    "spreadsheetType": "Spreadsheet",
+    "passwordRequired": "File password required",
+    "passwordInformation": "The file copy will not be password protected",
+    "passwordInvalid": "Incorrect password",
+    "xmlInformation": "Please choose the type you want open:"
 }

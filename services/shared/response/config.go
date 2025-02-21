@@ -1,6 +1,6 @@
 /**
  *
- * (c) Copyright Ascensio System SIA 2023
+ * (c) Copyright Ascensio System SIA 2024
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ type BuildConfigResponse struct {
 	Token        string       `json:"token,omitempty"`
 	Session      bool         `json:"is_session,omitempty"`
 	ServerURL    string       `json:"server_url"`
+	Owner        bool         `json:"is_owner"`
 }
 
 func (r BuildConfigResponse) ToJSON() []byte {

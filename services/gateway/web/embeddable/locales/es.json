@@ -12,5 +12,13 @@
     "openView": "Abrir el archivo solo para su visualización",
     "selectAction": "Por favor, seleccione la acción:",
     "cannotOpen": "Este tipo de archivo no se puede abrir correctamente.",
-    "openOnlyoffice": "Abrir con ONLYOFFICE"
+    "openOnlyoffice": "Abrir con ONLYOFFICE",
+    "successfulInvitation": "Invitaciones enviadas correctamente",
+    "failedInvitation": "No se ha podido invitar a usuarios",
+    "documentType": "Documento",
+    "spreadsheetType": "Hoja de cálculo",
+    "passwordRequired": "Se requiere contraseña para el archivo",
+    "passwordInformation": "La copia del archivo no estará protegida por contraseña",
+    "passwordInvalid": "Contraseña incorrecta",
+    "xmlInformation": "Por favor, elija el tipo que desea abrir:"
 }
