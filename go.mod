@@ -1,7 +1,6 @@
 module github.com/ONLYOFFICE/onlyoffice-box
 
 go 1.23
-
 require (
 	github.com/ONLYOFFICE/onlyoffice-integration-adapters v0.1.4
 	github.com/gorilla/securecookie v1.1.2
@@ -156,13 +155,13 @@ require (
 	go.opentelemetry.io/otel/exporters/zipkin v1.32.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.32.0 // indirect
 	go.uber.org/fx v1.23.0 // indirect
-	golang.org/x/crypto v0.29.0 // indirect
+	golang.org/x/crypto v0.35.0 // indirect
 	golang.org/x/mod v0.22.0 // indirect
-	golang.org/x/net v0.31.0 // indirect
+	golang.org/x/net v0.36.0 // indirect
 	golang.org/x/oauth2 v0.24.0
-	golang.org/x/sync v0.9.0
-	golang.org/x/sys v0.27.0 // indirect
-	golang.org/x/text v0.20.0
+	golang.org/x/sync v0.11.0
+	golang.org/x/sys v0.30.0 // indirect
+	golang.org/x/text v0.22.0
 	golang.org/x/tools v0.27.0 // indirect
 	google.golang.org/protobuf v1.35.2 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
