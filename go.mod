@@ -1,6 +1,6 @@
 module github.com/ONLYOFFICE/onlyoffice-box
 
-go 1.23
+go 1.23.0
 
 require (
 	github.com/ONLYOFFICE/onlyoffice-integration-adapters v0.1.4
@@ -159,7 +159,7 @@ require (
 	golang.org/x/crypto v0.29.0 // indirect
 	golang.org/x/mod v0.22.0 // indirect
 	golang.org/x/net v0.31.0 // indirect
-	golang.org/x/oauth2 v0.24.0
+	golang.org/x/oauth2 v0.27.0
 	golang.org/x/sync v0.9.0
 	golang.org/x/sys v0.27.0 // indirect
 	golang.org/x/text v0.20.0
