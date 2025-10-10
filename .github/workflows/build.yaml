@@ -62,5 +62,5 @@ jobs:
           file: Dockerfile
           push: true
           platforms: linux/amd64
-          tags: ${{ env.DOCKER_HUB_NAMESPACE }}/onlyoffice-${{ matrix.service }}:${{ github.event.inputs.tag || env.RC_TAG }}
+          tags: ${{ env.DOCKER_HUB_NAMESPACE }}/box-${{ matrix.service }}:${{ github.event.inputs.tag || env.RC_TAG }}
 
