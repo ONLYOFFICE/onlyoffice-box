@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Specify tag or it will be auto service:rc-<run_number>'
+        description: 'Specify tag ex. (rc.5) or it will be auto service:rc.<run_number>'
         type: string
         required: false
 
@@ -50,9 +50,9 @@ jobs:
         run: |
           echo "APP_VERSION=$()" >> "$GITHUB_ENV" # Should be set!
           if [[ "$EVENT" == 'push' && "$REF" == 'develop' ]]; then
-           echo "RC_TAG=rc${{ github.run_number }}" >> "$GITHUB_ENV"
+           echo "RC_TAG=rc.${{ github.run_number }}" >> "$GITHUB_ENV"
           elif [[ "$EVENT" == 'workflow_dispatch' && -z "$TAG" ]]; then
-           echo "RC_TAG=rc${{ github.run_number }}" >> "$GITHUB_ENV"
+           echo "RC_TAG=rc.${{ github.run_number }}" >> "$GITHUB_ENV"
           fi
 
       - name: Publish Image
