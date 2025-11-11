@@ -19,6 +19,7 @@
 package middleware
 
 import (
+	"context"
 	"net/http"
 	"time"
 
@@ -30,6 +31,10 @@ import (
 	"github.com/gorilla/sessions"
 	"golang.org/x/oauth2"
 )
+
+type contextKey string
+
+const UserIDKey contextKey = "user_id"
 
 func NewSessionStore(credentials *oauth2.Config) *sessions.CookieStore {
 	return &sessions.CookieStore{
@@ -90,7 +95,6 @@ func (m SessionMiddleware) Protect(next http.Handler) http.Handler {
 
 		var token jwt.MapClaims
 		if err := m.jwtManager.Verify(m.credentials.ClientSecret, val, &token); err != nil {
-			m.logger.Debugf("could not verify session token: %s", err.Error())
 			session.Options.MaxAge = -1
 			session.Save(r, rw)
 			m.saveRedirectURL(rw, r)
@@ -98,8 +102,18 @@ func (m SessionMiddleware) Protect(next http.Handler) http.Handler {
 			return
 		}
 
-		if token["jti"] != userID {
-			m.logger.Debugf("user %s doesn't match state user %s", token["jti"], userID)
+		tokenUserID, ok := token["jti"].(string)
+		if !ok {
+			session.Options.MaxAge = -1
+			session.Save(r, rw)
+			m.saveRedirectURL(rw, r)
+			http.Redirect(rw, r, "/oauth/install", http.StatusMovedPermanently)
+			return
+		}
+
+		if userID == "" {
+			userID = tokenUserID
+		} else if tokenUserID != userID {
 			session.Options.MaxAge = -1
 			session.Save(r, rw)
 			m.saveRedirectURL(rw, r)
@@ -120,7 +134,8 @@ func (m SessionMiddleware) Protect(next http.Handler) http.Handler {
 
 		m.logger.Debugf("refreshed current session: %s", signature)
 
-		next.ServeHTTP(rw, r)
+		ctx := context.WithValue(r.Context(), UserIDKey, userID)
+		next.ServeHTTP(rw, r.WithContext(ctx))
 	}
 
 	return http.HandlerFunc(fn)
