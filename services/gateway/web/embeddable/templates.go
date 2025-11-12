@@ -43,6 +43,9 @@ var (
 	ConvertPage           = template.Must(template.ParseFS(
 		templateFiles, "templates/convert.html", "templates/error.html", "templates/spinner.html",
 	))
+	DesktopPage = template.Must(template.ParseFS(
+		templateFiles, "templates/desktop.html",
+	))
 )
 
 func init() {

@@ -52,12 +52,14 @@ func Server() *cli.Command {
 				pkg.WithModules(
 					controller.NewAuthController, controller.NewEditorController,
 					controller.NewFileController, controller.NewShareController,
+					controller.NewDesktopController,
 					chttp.NewService, web.NewServer,
 					shared.BuildNewIntegrationCredentialsConfig(CONFIG_PATH),
 					shared.NewBoxAPIClient, shared.BuildNewOnlyofficeConfig(CONFIG_PATH),
 					crypto.NewStateGenerator,
 					middleware.NewSessionStore,
 					middleware.NewSessionMiddleware,
+					middleware.NewDesktopMiddleware,
 					format.NewMapFormatManager,
 				),
 			).Bootstrap()

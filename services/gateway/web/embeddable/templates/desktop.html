@@ -1,0 +1,122 @@
+<!--*
+ *
+ * (c) Copyright Ascensio System SIA 2025
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+*-->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
+    <title>ONLYOFFICE</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            min-height: 100vh;
+
+            margin: 0;
+            padding: 0;
+
+            background: white;
+        }
+
+        .loader {
+            display: flex;
+            align-items: center;
+
+            gap: 8px;
+        }
+
+        .spinner {
+            width: 22px;
+            height: 22px;
+
+            flex-shrink: 0;
+
+            margin-right: 12px;
+
+            border: 1.65px solid transparent;
+            border-top: 1.65px solid #444444;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        .loader-text {
+            font-family: 'Segoe UI', sans-serif;
+            font-weight: 400;
+            font-style: normal;
+            font-size: 15px;
+
+            line-height: 20px;
+            letter-spacing: 0.02em;
+            
+            color: #444444;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: #1a1a1a;
+            }
+
+            .spinner {
+                border-top: 1.65px solid #FFFFFF;
+            }
+
+            .loader-text {
+                color: #FFFFFFCC;
+            }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="loader">
+        <div class="spinner"></div>
+        <span class="loader-text">{{ .loading }}</span>
+    </div>
+</body>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var uiTheme = isDark ? "theme-dark" : "theme-light";
+        var params = {
+            displayName: "{{ .displayName }}",
+            email: "{{ .email }}",
+            domain: "{{ .domain }}",
+            provider: "{{ .provider }}",
+            uiTheme: uiTheme,
+            userId: "{{ .userId }}",
+        };
+
+        window.AscDesktopEditor.execCommand("portal:login", JSON.stringify(params));
+        setTimeout(function() {
+            window.location.href = "https://app.box.com";
+        }, 500);
+    });
+</script>
+
+</html>
