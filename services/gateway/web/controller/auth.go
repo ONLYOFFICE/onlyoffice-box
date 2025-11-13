@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/ONLYOFFICE/onlyoffice-box/services/gateway/web/embeddable"
@@ -90,11 +91,25 @@ func (c AuthController) saveSession(rw http.ResponseWriter, r *http.Request, ses
 	return nil
 }
 
+func (c AuthController) isDesktopRequest(r *http.Request) bool {
+	if r.URL.Query().Get("desktop") == "true" {
+		return true
+	}
+
+	userAgent := r.Header.Get("User-Agent")
+	return strings.Contains(userAgent, "AscDesktopEditor")
+}
+
 func (c AuthController) getRedirectURL(rw http.ResponseWriter, r *http.Request) string {
 	session, _ := c.session.Get(r, "url")
 	redirectURL := session.Values["redirect"]
 	session.Options.MaxAge = -1
 	session.Save(r, rw)
+
+	if c.isDesktopRequest(r) {
+		c.logger.Debug("desktop app detected, redirecting to /app")
+		return c.onlyoffice.Onlyoffice.Builder.GatewayURL + "/app/?desktop=true&placement=desktop"
+	}
 
 	if url, ok := redirectURL.(string); ok {
 		return url

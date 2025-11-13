@@ -23,6 +23,7 @@ import "encoding/json"
 type BoxUserResponse struct {
 	ID       string `json:"id"`
 	Name     string `json:"name"`
+	Login    string `json:"login"`
 	Language string `json:"language"`
 	Timezone string `json:"timezone"`
 }
