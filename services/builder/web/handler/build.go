@@ -178,8 +178,9 @@ func (c ConfigHandler) processConfig(
 		}
 
 		config.Document.FileType = file.Extension
+		canEdit := file.Permissions.CanUpload || config.Owner
 		config.Document.Permissions = response.Permissions{
-			Edit:                 file.Permissions.CanUpload && (format.IsEditable() || (req.ForceEdit && format.IsLossyEditable())),
+			Edit:                 canEdit && (format.IsEditable() || (req.ForceEdit && format.IsLossyEditable())),
 			Comment:              file.Permissions.CanComment,
 			Download:             file.Permissions.CanDownload,
 			Print:                file.Permissions.CanDownload,
