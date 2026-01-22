@@ -52,11 +52,9 @@
     html,
     body {
       height: 100%;
+      width: 100%;
       margin: 0;
       padding: 0;
-    }
-
-    body {
       background: #fff;
       color: #333;
       font-family: Arial, Tahoma, sans-serif;
@@ -140,6 +138,23 @@
       max-height: 50vh;
       overflow-y: auto;
       margin-bottom: 10px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      body {
+        background: #1A1918;
+        color: #f0f0f0;
+      }
+
+      .container_button {
+        background-color: #F7F5F2;
+        color: #1E1919;
+      }
+
+      .container_button:focus,
+      .container_button:hover {
+        box-shadow: none;
+      }
     }
 
     @media (max-width: 600px) {

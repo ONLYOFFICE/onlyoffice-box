@@ -272,6 +272,95 @@
         .transform {
             transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
         }
+
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: #1A1918;
+                color: #f0f0f0;
+            }
+
+            hr.solid {
+                border-top: 1px solid #555555;
+            }
+
+            .text, label {
+                color: #f0f0f0;
+            }
+
+            span {
+                color: #BBB5AE;
+            }
+
+            .button_primary {
+                background-color: #F7F5F2;
+                color: #1E1919;
+            }
+
+            .button_primary:disabled {
+                background-color: #5A5650;
+            }
+
+            .button_secondary {
+                border: none;
+                background-color: #FFFFFF1A;
+                color: #FFFFFF;
+            }
+
+            #tooltip {
+                background: #2D2B29;
+                color: #f0f0f0;
+                box-shadow: 0 12px 16px 0 rgba(255, 255, 255, 0.1),
+                            0 17px 50px 0 rgba(255, 255, 255, 0.1);
+            }
+
+            #tooltip::before {
+                border-right: 26px solid #2D2B29;
+            }
+
+            #tooltip_info {
+                color: #FFFFFF;
+            }
+
+            #tooltip_info_link {
+                color: #FFFFFF;
+            }
+
+            #tooltip_icon_svg {
+                fill: #D8D8D8;
+            }
+
+            #conversion {
+                background: #2D2B29;
+                border: 1px solid #2D2B29;
+                box-shadow: none;
+            }
+
+            #file-password {
+                background-color: #2D2B29;
+                color: #f0f0f0;
+                border: 1px solid #555555;
+            }
+
+            .xml-type {
+                border-color: #3c3c3c;
+                color: #E8E8E8;
+            }
+
+            .xml-type:hover {
+                background-color: #706e6e;
+                border-color: #3c3c3c;
+            }
+
+            input[type="radio"]:checked + .docx {
+                background-color: #6D9BF8;
+                color: white;
+            }
+
+            input[type="radio"]:checked + .xlsx {
+                background-color: #469D46;
+                color: white;
+            }
+        }
     </style>
 </head>
 
@@ -341,6 +430,7 @@
                                                 xmlns="http://www.w3.org/2000/svg"
                                             >
                                                 <path 
+                                                    id="tooltip_icon_svg"
                                                     fill-rule="evenodd" 
                                                     clip-rule="evenodd" 
                                                     d="M6.5 12.5C9.81371 12.5 12.5 9.81371 12.5 6.5C12.5 3.18629 9.81371 0.5 6.5 0.5C3.18629 0.5 0.5 3.18629 0.5 6.5C0.5 9.81371 3.18629 12.5 6.5 12.5ZM7.5 6.5C7.5 7.05228 7.05228 7.5 6.5 7.5C5.94772 7.5 5.5 7.05228 5.5 6.5L5.5 3.5C5.5 2.94772 5.94772 2.5 6.5 2.5C7.05229 2.5 7.5 2.94772 7.5 3.5L7.5 6.5ZM6.5 10.5C7.05228 10.5 7.5 10.0523 7.5 9.5C7.5 8.94771 7.05228 8.5 6.5 8.5C5.94771 8.5 5.5 8.94771 5.5 9.5C5.5 10.0523 5.94771 10.5 6.5 10.5Z"
@@ -377,9 +467,9 @@
                                 <label for="edit">{{.openEditing}}</label>
                                 <span style="cursor: pointer;"
                                     x-on:mouseover="(e) => showTooltip(e)" x-on:mouseleave="(e) => closeTooltip(e)">
-                                    <svg id="tooltip-icon" width="12" height="12" viewBox="0 0 12 12" fill="none"
+                                    <svg id="tooltip_icon" width="12" height="12" viewBox="0 0 12 12" fill="none"
                                         xmlns="http://www.w3.org/2000/svg">
-                                        <path fill-rule="evenodd" clip-rule="evenodd"
+                                        <path id="tooltip_icon_svg" fill-rule="evenodd" clip-rule="evenodd"
                                             d="M6 12C9.31371 12 12 9.31371 12 6C12 2.68629 9.31371 0 6 0C2.68629 0 0 2.68629 0 6C0 9.31371 2.68629 12 6 12ZM5 6C5 5.44772 5.44772 5 6 5C6.55228 5 7 5.44772 7 6V9C7 9.55229 6.55228 10 6 10C5.44772 10 5 9.55229 5 9V6ZM6 2C5.44772 2 5 2.44772 5 3C5 3.55228 5.44772 4 6 4C6.55228 4 7 3.55228 7 3C7 2.44772 6.55228 2 6 2Z"
                                             fill="#D0D5DA" />
                                     </svg>
@@ -387,8 +477,8 @@
                                         <div id="tooltip" x-show="tooltip">
                                             <div
                                                 style="padding: 10px; display: flex; justify-content: center; align-items: center;">
-                                                <b style="color: black;">{{.moreInfo}}&nbsp;</b>
-                                                <a style="text-decoration: underline; color: black;"
+                                                <b id="tooltip_info">{{.moreInfo}}&nbsp;</b>
+                                                <a id="tooltip_info_link"
                                                     href="https://helpcenter.onlyoffice.com/faq/connectors.aspx">
                                                     https://helpcenter.onlyoffice.com/faq/connectors.aspx
                                                 </a>
@@ -450,7 +540,7 @@
                 xmlType: '',
                 showTooltip(e) {
                     this.tooltip = true;
-                    const iconPosition = document.getElementById('tooltip-icon').getBoundingClientRect();
+                    const iconPosition = document.getElementById('tooltip_icon').getBoundingClientRect();
                     document.getElementById('tooltip-container').style.top = `${iconPosition.y-31}px`;
                     document.getElementById('tooltip-container').style.left = `${iconPosition.x+42}px`;
                 },
