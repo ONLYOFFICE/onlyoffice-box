@@ -40,11 +40,12 @@ func NewSessionStore(credentials *oauth2.Config) *sessions.CookieStore {
 	return &sessions.CookieStore{
 		Codecs: securecookie.CodecsFromPairs([]byte(credentials.ClientSecret)),
 		Options: &sessions.Options{
-			Path:     "/",
-			HttpOnly: true,
-			Secure:   true,
-			MaxAge:   86400 * 30,
-			SameSite: http.SameSiteNoneMode,
+			Path:        "/",
+			HttpOnly:    true,
+			Secure:      true,
+			MaxAge:      86400 * 30,
+			SameSite:    http.SameSiteNoneMode,
+			Partitioned: true,
 		},
 	}
 }

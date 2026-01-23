@@ -40,6 +40,7 @@
             justify-content: center;
             align-items: center;
             flex-direction: column;
+            background: #fff;
         }
 
         .container_text {
@@ -49,19 +50,49 @@
 
         .container_text_main {
             font-weight: 600;
-            font-size: 23px;
-            line-height: 28px;
-            letter-spacing: 0px;
+            font-size: 16px;
+            line-height: 24px;
             margin-bottom: 0.2rem;
+            color: #333333;
         }
 
         .container_text_subtext {
-            font-weight: 400;
+            font-weight: 450;
             font-size: 14px;
-            line-height: 16px;
-            letter-spacing: 0px;
+            line-height: 20px;
             color: #656E7A;
             margin-top: 0;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: #1A1918;
+                color: #f0f0f0;
+            }
+
+            .container {
+                background: #1c1c1c;
+            }
+
+            .container_text_main {
+                color: #f0f0f0;
+            }
+
+            .container_text_subtext {
+                color: #a0a0a0;
+            }
+
+            .container_actions_button {
+                background-color: #F7F5F2;
+                color: #1E1919;
+            }
+
+            .container_actions_button:focus,
+            .container_actions_button:hover {
+                box-shadow:
+                    0 6px 8px 0 rgba(255, 255, 255, 0.1),
+                    0 6px 25px 0 rgba(255, 255, 255, 0.1);
+            }
         }
 
         .container_actions_button {

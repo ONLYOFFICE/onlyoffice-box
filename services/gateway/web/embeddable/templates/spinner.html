@@ -59,6 +59,25 @@
             transform: rotate(360deg);
         }
     }
+
+    @media (prefers-color-scheme: dark) {
+        #spinner {
+            background: conic-gradient(
+              from 90deg at 50% 50%,
+              rgba(255, 255, 255, 0.05) 0deg,
+              #F7F5F2 359.96deg,
+              rgba(255, 255, 255, 0.05) 360deg
+            );
+        }
+
+        #spinner::before {
+            background: #1c1c1c;
+        }
+
+        #spinner::after {
+            background: #F7F5F2;
+        }
+    }
 </style>
-<div id="spinner" />
+<div id="spinner"></div>
 {{end}}
