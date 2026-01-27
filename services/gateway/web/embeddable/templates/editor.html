@@ -49,6 +49,27 @@
         0 17px 50px 0 rgba(0, 0, 0, 0.19);
     }
 
+    .container_button_secondary {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 40px;
+      padding: 12px 16px;
+      background-color: #FFFFFF;
+      border: 1px solid #C2C2C2;
+      border-radius: 6px;
+      color: black;
+      transition: all 0.2s ease-in;
+      cursor: pointer;
+      margin: 5px;
+    }
+
+    .container_button_secondary:focus,
+    .container_button_secondary:hover {
+      box-shadow: 0 12px 16px 0 rgba(0, 0, 0, 0.24),
+        0 17px 50px 0 rgba(0, 0, 0, 0.19);
+    }
+
     html,
     body {
       height: 100%;
@@ -155,6 +176,17 @@
       .container_button:hover {
         box-shadow: none;
       }
+
+      .container_button_secondary {
+        border: none;
+        background-color: #F7F5F2;
+        color: #1E1919;
+      }
+
+      .container_button_secondary:focus,
+      .container_button_secondary:hover {
+        box-shadow: none;
+      }
     }
 
     @media (max-width: 600px) {
@@ -226,7 +258,7 @@
         <div style="display: flex; justify-content: center; min-width: 100px;">
           {{template "spinner"}}
         </div>
-        <button class="container_button" onclick="window.parent.close()" style="margin-top: 2rem; width: auto; min-width: 100px;">
+        <button class="container_button" onclick="window.parent.close()" style="margin-top: 32px; width: auto; min-width: 100px;">
           <p class="buttontext">{{.CancelButton}}</p>
         </button>
       </div>
