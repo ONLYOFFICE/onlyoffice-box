@@ -44,7 +44,7 @@ var (
 		templateFiles, "templates/convert.html", "templates/error.html", "templates/spinner.html",
 	))
 	DesktopPage = template.Must(template.ParseFS(
-		templateFiles, "templates/desktop.html",
+		templateFiles, "templates/desktop.html", "templates/spinner.html",
 	))
 )
 
