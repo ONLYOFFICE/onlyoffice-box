@@ -280,6 +280,14 @@
             transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
         }
 
+        .loading-container {
+            background: #FFFFFF;
+        }
+
+        .loading-container[x-cloak] {
+            display: none !important;
+        }
+
         @media (prefers-color-scheme: dark) {
             body {
                 background: #1A1918;
@@ -309,8 +317,8 @@
 
             .button_secondary {
                 border: none;
-                background-color: #FFFFFF1A;
-                color: #FFFFFF;
+                background-color: #F7F5F2;
+                color: #1E1919;
             }
 
             #tooltip {
@@ -366,6 +374,10 @@
             input[type="radio"]:checked + .xlsx {
                 background-color: #469D46;
                 color: white;
+            }
+
+            .loading-container {
+                background: #1A1918;
             }
         }
     </style>
@@ -522,8 +534,13 @@
             <div id="error" x-show="!loading && error" hidden>
                 {{template "error" .}}
             </div>
-            <div x-show="loading && !error">
-                {{template "spinner"}}
+            <div x-show="loading && !error" x-cloak class="loading-container" style="display: none; flex-direction: column; align-items: center; justify-content: center;">
+                <div style="display: flex; justify-content: center; min-width: 100px;">
+                    {{template "spinner"}}
+                </div>
+                <button class="button button_secondary" onclick="window.parent.close();" style="margin-top: 2rem; width: auto; min-width: 100px;">
+                    <p class="buttontext">{{.cancelButton}}</p>
+                </button>
             </div>
         </div>
     </div>
