@@ -191,6 +191,12 @@ func (c ConfigHandler) processConfig(
 			FillForms:            format.IsFillable(),
 		}
 
+		if config.Document.Permissions.Edit {
+			config.EditorConfig.Mode = "edit"
+		} else {
+			config.EditorConfig.Mode = "view"
+		}
+
 		if !config.Document.Permissions.Edit {
 			config.Document.Key = uuid.NewString()
 		}
