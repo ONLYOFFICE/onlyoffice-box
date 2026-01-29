@@ -69,6 +69,7 @@ type BoxFileResponse struct {
 	Name          string          `json:"name"`
 	Description   string          `json:"description"`
 	Extension     string          `json:"extension"`
+	Size          int64           `json:"size"`
 	ModifiedAt    string          `json:"modified_at"`
 	FileVersion   BoxVersion      `json:"file_version"`
 	VersionNumber string          `json:"version_number"`
