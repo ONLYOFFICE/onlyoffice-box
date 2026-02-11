@@ -1,6 +1,9 @@
 # Change Log
 
 ##
+## Added
+- support ONLYOFFICE Desktop
+
 ## Changed
 - extended list of supported formats
 
