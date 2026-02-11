@@ -1,6 +1,6 @@
 /**
  *
- * (c) Copyright Ascensio System SIA 2024
+ * (c) Copyright Ascensio System SIA 2026
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -224,7 +224,7 @@ func (c *boxAPIClient) GetFileInfo(
 		SetAuthToken(token).
 		SetResult(&file).
 		SetQueryParams(map[string]string{
-			"fields": "id,name,description,extension,modified_at,file_version,version_number,parent,permissions,created_by",
+			"fields": "id,name,description,extension,size,modified_at,file_version,version_number,parent,permissions,created_by",
 		}).
 		SetPathParams(map[string]string{
 			"fileID": fileID,

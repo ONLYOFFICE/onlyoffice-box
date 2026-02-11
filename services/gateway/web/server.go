@@ -1,6 +1,6 @@
 /**
  *
- * (c) Copyright Ascensio System SIA 2024
+ * (c) Copyright Ascensio System SIA 2026
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,29 +33,35 @@ import (
 type BoxHTTPService struct {
 	mux               *chi.Mux
 	authController    controller.AuthController
+	desktopController controller.DesktopController
 	editorController  controller.EditorController
 	fileController    controller.FileController
 	shareController   controller.ShareController
 	sessionMiddleware middleware.SessionMiddleware
+	desktopMiddleware middleware.DesktopMiddleware
 	csrfMiddleware    func(http.Handler) http.Handler
 }
 
 // NewService initializes http server with options.
 func NewServer(
 	authController controller.AuthController,
+	desktopController controller.DesktopController,
 	editorController controller.EditorController,
 	fileController controller.FileController,
 	shareController controller.ShareController,
 	sessionMiddleware middleware.SessionMiddleware,
+	desktopMiddleware middleware.DesktopMiddleware,
 	credentials *oauth2.Config,
 ) shttp.ServerEngine {
 	service := BoxHTTPService{
 		mux:               chi.NewRouter(),
 		authController:    authController,
+		desktopController: desktopController,
 		editorController:  editorController,
 		fileController:    fileController,
 		shareController:   shareController,
 		sessionMiddleware: sessionMiddleware,
+		desktopMiddleware: desktopMiddleware,
 		csrfMiddleware: csrf.Protect(
 			[]byte(credentials.ClientSecret),
 			csrf.HttpOnly(true),
@@ -98,6 +104,11 @@ func (s *BoxHTTPService) InitializeRoutes() {
 			cr.Use(s.sessionMiddleware.Protect, sizeMiddleware, s.csrfMiddleware)
 			cr.Get("/users/invitations", s.shareController.BuildGetInvitations())
 			cr.Post("/users/invite", s.shareController.BuildInviteUser())
+		})
+
+		r.Route("/app", func(cr chi.Router) {
+			cr.Use(s.desktopMiddleware.RequireDesktop, s.sessionMiddleware.Protect, sizeMiddleware)
+			cr.Handle("/", s.desktopController.BuildEntryPage())
 		})
 
 		r.Route("/", func(cr chi.Router) {

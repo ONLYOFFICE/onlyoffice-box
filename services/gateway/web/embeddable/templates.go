@@ -1,6 +1,6 @@
 /**
  *
- * (c) Copyright Ascensio System SIA 2024
+ * (c) Copyright Ascensio System SIA 2026
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,9 @@ var (
 	InstallationErrorPage = template.Must(template.ParseFS(templateFiles, "templates/installation.html"))
 	ConvertPage           = template.Must(template.ParseFS(
 		templateFiles, "templates/convert.html", "templates/error.html", "templates/spinner.html",
+	))
+	DesktopPage = template.Must(template.ParseFS(
+		templateFiles, "templates/desktop.html", "templates/spinner.html",
 	))
 )
 

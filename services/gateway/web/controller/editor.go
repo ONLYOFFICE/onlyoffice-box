@@ -1,6 +1,6 @@
 /**
  *
- * (c) Copyright Ascensio System SIA 2024
+ * (c) Copyright Ascensio System SIA 2026
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/ONLYOFFICE/onlyoffice-box/services/gateway/web/embeddable"
@@ -111,7 +112,7 @@ func (c EditorController) BuildGetEditor() http.HandlerFunc {
 
 			rw.Header().Set("Content-Type", "text/html")
 			embeddable.EditorPage.Execute(rw, map[string]interface{}{
-				"apijs":   fmt.Sprintf("%s/web-apps/apps/api/documents/api.js", config.ServerURL),
+				"apijs":   fmt.Sprintf("%s/web-apps/apps/api/documents/api.js?shardkey=%s", config.ServerURL, url.QueryEscape(config.Document.Key)),
 				"CSRF":    csrf.Token(r),
 				"Config":  string(config.ToJSON()),
 				"User":    state.UserID,

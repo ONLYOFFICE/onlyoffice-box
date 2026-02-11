@@ -1,5 +1,12 @@
 # Change Log
 
+## 1.2.0
+## Added
+- support ONLYOFFICE Desktop
+
+## Changed
+- extended list of supported formats
+
 ## 1.1.0
 ## Added
 - users invitation on mention

@@ -1,26 +1,18 @@
 <!--*
  *
- * (c) Copyright Ascensio System SIA 2024
+ * (c) Copyright Ascensio System SIA 2026
  *
- * The MIT License (MIT)
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  *
 *-->
 <!DOCTYPE html>
@@ -57,14 +49,33 @@
         0 17px 50px 0 rgba(0, 0, 0, 0.19);
     }
 
+    .container_button_secondary {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 40px;
+      padding: 12px 16px;
+      background-color: #FFFFFF;
+      border: 1px solid #C2C2C2;
+      border-radius: 6px;
+      color: black;
+      transition: all 0.2s ease-in;
+      cursor: pointer;
+      margin: 5px;
+    }
+
+    .container_button_secondary:focus,
+    .container_button_secondary:hover {
+      box-shadow: 0 12px 16px 0 rgba(0, 0, 0, 0.24),
+        0 17px 50px 0 rgba(0, 0, 0, 0.19);
+    }
+
     html,
     body {
       height: 100%;
+      width: 100%;
       margin: 0;
       padding: 0;
-    }
-
-    body {
       background: #fff;
       color: #333;
       font-family: Arial, Tahoma, sans-serif;
@@ -150,6 +161,34 @@
       margin-bottom: 10px;
     }
 
+    @media (prefers-color-scheme: dark) {
+      body {
+        background: #1A1918;
+        color: #f0f0f0;
+      }
+
+      .container_button {
+        background-color: #F7F5F2;
+        color: #1E1919;
+      }
+
+      .container_button:focus,
+      .container_button:hover {
+        box-shadow: none;
+      }
+
+      .container_button_secondary {
+        border: none;
+        background-color: #F7F5F2;
+        color: #1E1919;
+      }
+
+      .container_button_secondary:focus,
+      .container_button_secondary:hover {
+        box-shadow: none;
+      }
+    }
+
     @media (max-width: 600px) {
       .popup-content {
         width: 95%;
@@ -216,11 +255,13 @@
             align-items: center;
             flex-direction: column;
           ">
-        {{template "spinner"}}
+        <div style="display: flex; justify-content: center; min-width: 100px;">
+          {{template "spinner"}}
+        </div>
+        <button class="container_button" onclick="window.parent.close()" style="margin-top: 32px; width: auto; min-width: 100px;">
+          <p class="buttontext">{{.CancelButton}}</p>
+        </button>
       </div>
-      <button class="container_button" onclick="window.parent.close()" style="margin-top: 2rem">
-        <p class="buttontext">{{.CancelButton}}</p>
-      </button>
     </div>
   </div>
   <script type="text/javascript" src="{{ .apijs }}"></script>
@@ -336,9 +377,17 @@
 
     const onAppReady = async () => {
       innerAlert("Document editor ready");
-      document.getElementsByClassName('container').item(0).remove();
+
+      const containerElem = document.getElementsByClassName('container').item(0);
+      if (containerElem) {
+        containerElem.style.display = "none";
+      }
+
       setTimeout(() => {
-        document.getElementsByClassName('form').item(0).style.visibility = "visible";
+        const formElem = document.getElementsByClassName('form').item(0);
+        if (formElem) {
+          formElem.style.visibility = "visible";
+        }
       }, 150);
     };
 
@@ -356,6 +405,49 @@
         "users": Alpine.store('invitations').users,
       });
     };
+
+    function onOutdatedVersion() {
+      const user = "{{ .User }}";
+      const file = "{{ .File }}";
+      
+      const editorForm = document.getElementById('editor-form');
+      const container = document.querySelector('.container');
+      if (editorForm) {
+        editorForm.style.visibility = 'hidden';
+      }
+
+      if (container) {
+        container.style.display = 'flex';
+      }
+      
+      if (docEditor) {
+        docEditor.destroyEditor();
+        docEditor = null;
+      }
+      
+      const urlParams = new URLSearchParams(window.location.search);
+      const stateParam = urlParams.get('state');
+      let stateData = {};
+      if (stateParam) {
+        try {
+          stateData = JSON.parse(decodeURIComponent(stateParam));
+        } catch (e) {
+          console.warn("Could not parse state, using defaults");
+        }
+      }
+      
+      const state = {
+        action: stateData.action || stateData.Action || "edit",
+        user_id: user,
+        file_id: file,
+        force_edit: stateData.force_edit !== undefined ? stateData.force_edit : (stateData.ForceEdit || false),
+      };
+      
+      const editorUrl = `/editor?state=${encodeURIComponent(JSON.stringify(state))}&user=${user}`;
+      setTimeout(() => {
+        window.location.href = editorUrl;
+      }, 6000);
+    }
 
     // const onRequestSharingSettings = async () => {
     //   document.getElementById('notifyPopup').style.display = 'block';
@@ -390,6 +482,7 @@
       "onRequestClose": onRequestClose,
       "onRequestUsers": onRequestUsers,
       "onRequestSendNotify": onRequestSendNotify,
+      "onOutdatedVersion": onOutdatedVersion,
       // ...(owner && { "onRequestSharingSettings": onRequestSharingSettings })
     };
 

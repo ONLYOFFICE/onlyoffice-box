@@ -1,6 +1,6 @@
 /**
  *
- * (c) Copyright Ascensio System SIA 2024
+ * (c) Copyright Ascensio System SIA 2026
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import "encoding/json"
 type BoxUserResponse struct {
 	ID       string `json:"id"`
 	Name     string `json:"name"`
+	Login    string `json:"login"`
 	Language string `json:"language"`
 	Timezone string `json:"timezone"`
 }
@@ -68,6 +69,7 @@ type BoxFileResponse struct {
 	Name          string          `json:"name"`
 	Description   string          `json:"description"`
 	Extension     string          `json:"extension"`
+	Size          int64           `json:"size"`
 	ModifiedAt    string          `json:"modified_at"`
 	FileVersion   BoxVersion      `json:"file_version"`
 	VersionNumber string          `json:"version_number"`

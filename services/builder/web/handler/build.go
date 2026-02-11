@@ -1,6 +1,6 @@
 /**
  *
- * (c) Copyright Ascensio System SIA 2024
+ * (c) Copyright Ascensio System SIA 2026
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,7 @@ var (
 	errOperationTimeout   = errors.New("operation timeout")
 	errFormatNotSupported = errors.New("current format is not supported")
 	group                 singleflight.Group
+	minimalFile           = "UEsDBBQAAAAIAF5pY1UAAAAAAAAAAAAAAAAFAAAAeGwvUEsDBBQAAAAIAF5pY1UAAAAAAAAAAAAAAAALAAAAX3JlbHMvLnJlbHNQSwECPwAUAAAACABeaWNVAAAAAAAAAAAAAAAABQAAAAAAAAAAACAAtoEAAAAAeGwvUEsBAj8AFAAAAAgAXmljVQAAAAAAAAAAAAAAAAsAAAAAAAAAAAC2gQAAAABfcmVscy8ucmVsc1BLBQYAAAAAAgACAH4AAABkAAAAAAA="
 )
 
 type ConfigHandler struct {
@@ -136,9 +137,29 @@ func (c ConfigHandler) processConfig(
 	file := <-fileChan
 	usr := <-userChan
 
-	url, err := c.boxClient.GetFilePublicUrl(ctx, user.AccessToken, file.ID)
+	var url string
+	var err error
+
+	isGoogleFormat := file.Extension == "gdoc" || file.Extension == "gsheet" || file.Extension == "gslides"
+	isEmpty := file.Size == 0
+	url, err = c.boxClient.GetFilePublicUrl(ctx, user.AccessToken, file.ID)
 	if err != nil {
-		return config, err
+		if isGoogleFormat && isEmpty {
+			mimeTypes := map[string]string{
+				"gdoc":    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+				"gsheet":  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+				"gslides": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+			}
+
+			mimeType, ok := mimeTypes[file.Extension]
+			if !ok {
+				return config, err
+			}
+
+			url = fmt.Sprintf("data:%s;base64,%s", mimeType, minimalFile)
+		} else {
+			return config, err
+		}
 	}
 
 	filename := c.formatManager.EscapeFileName(file.Name)
@@ -177,9 +198,15 @@ func (c ConfigHandler) processConfig(
 			return config, errFormatNotSupported
 		}
 
-		config.Document.FileType = file.Extension
+		if isGoogleFormat && isEmpty {
+			config.Document.FileType = format.GetOpenXMLExtension()
+		} else {
+			config.Document.FileType = file.Extension
+		}
+
+		canEdit := file.Permissions.CanUpload || config.Owner
 		config.Document.Permissions = response.Permissions{
-			Edit:                 file.Permissions.CanUpload && (format.IsEditable() || (req.ForceEdit && format.IsLossyEditable())),
+			Edit:                 canEdit && (format.IsEditable() || (req.ForceEdit && format.IsLossyEditable())),
 			Comment:              file.Permissions.CanComment,
 			Download:             file.Permissions.CanDownload,
 			Print:                file.Permissions.CanDownload,
@@ -188,6 +215,12 @@ func (c ConfigHandler) processConfig(
 			ModifyContentControl: true,
 			ModifyFilter:         true,
 			FillForms:            format.IsFillable(),
+		}
+
+		if config.Document.Permissions.Edit {
+			config.EditorConfig.Mode = "edit"
+		} else {
+			config.EditorConfig.Mode = "view"
 		}
 
 		if !config.Document.Permissions.Edit {
