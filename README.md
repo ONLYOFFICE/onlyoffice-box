@@ -37,7 +37,7 @@ The ONLYOFFICE App for Box supports the following file formats:
 
 > ⚠️ **Tip:** Non-OOXML formats may display layout differences or data loss when edited.
 
-## ℹ️ Project information
+## Project information
 
 **Official project page:** [onlyoffice.com](https://www.onlyoffice.com/office-for-box)
 
