@@ -1,34 +1,57 @@
 # ONLYOFFICE app for Box
 
-ONLYOFFICE app for Box allows working with office files directly within [Box](https://www.box.com/).
+The **ONLYOFFICE app for Box** allows users to **open, view, and co-edit** office files directly within [Box](https://www.box.com/) environment using [ONLYOFFICE Docs](https://www.onlyoffice.com/docs).
 
-## How it works
+<p align="center">
+  <a href="https://www.onlyoffice.com/office-for-box">
+    <img width="800" src="https://static-site.onlyoffice.com/public/images/templates/office-for-box/documents/screenshot1@2x.png" alt="ONLYOFFICE for Box">
+  </a>
+</p>
 
-ONLYOFFICE integration app allows users to open and edit the existing documents, spreadsheets, and presentations within Box.
+## ▶️ How it works
 
-Click the 3 dots icon to launch the file context menu, find **Integrations**, and select the **Open with ONLYOFFICE** option. The corresponding ONLYOFFICE editor will open in a new tab in the full screen mode.
+1. Open the **three-dots menu (⋮)** → **Integrations** → **Open with ONLYOFFICE**.
+2. The selected document (text, spreadsheet, presentation) opens in a full-screen ONLYOFFICE editor in a new tab.
+3. Collaborate in **real time** by sharing files with other Box users.
 
-It's also possible to collaborate on documents when sharing files with other Box users. 
+> ✍️ **Note:** The app uses a **pre-configured ONLYOFFICE Docs Cloud tenant** — no setup or manual configuration required.
 
-_**Please note**: the app uses the pre-configured tenant of ONLYOFFICE Docs Cloud and doesn't require any additional configuration._
+## ⚙️ Installation
 
-## Supported file formats 
+You can install the ONLYOFFICE App for Box directly from the **Box App Center**:
 
-ONLYOFFICE app for Box supports working with multiple file formats:
+1. Sign in to your Box account.
+2. Go to [Box App Center](https://app.box.com/integrations/onlyoffice_personal/i).
+3. Click **Add** to connect ONLYOFFICE.
 
-* OOXML files, including DOCX, XLSX, PPTX, are opened directly for editing. 
-* DOCXF and OFORM are supported for working with digital forms. 
-* ODT, ODP, ODS, TXT, CSV, RTF, EPUB, FB2 can be opened for viewing only, directly for editing with possible data loss due to format restrictions, or converted to OOXML for further editing.
-* DOC, XLS, PPT, DOT, ET, FODP, HTM, POT, etc. can be opened for viewing only or converted to OOXML for editing.
-* PDF, DJVU, OXPS can be opened for viewing only.
+## 📁 Supported file formats
 
-## Project info
+The ONLYOFFICE App for Box supports the following file formats:
 
-Official website: [www.onlyoffice.com](https://www.onlyoffice.com/)
+| Formats                                      | Editing behavior              | Notes                                 |
+| -------------------------------------------- | ----------------------------- | ------------------------------------- |
+| OOXML (DOCX, XLSX, PPTX)                     | Full editing in ONLYOFFICE    | —                                     |
+| ODT, ODP, ODS, TXT, CSV, RTF, EPUB, FB2      | View-only or limited editing  | Convert to OOXML for reliable editing |
+| DOC, XLS, PPT, DOT, ET, FODP, HTM, POT, etc. | View-only or convert to OOXML | Editing requires conversion           |
+| PDF, DJVU, OXPS                              | View-only                     | No editing support                    |
 
-Code repository: [github.com/ONLYOFFICE/onlyoffice-box](https://github.com/ONLYOFFICE/onlyoffice-box)
+> ⚠️ **Tip:** Non-OOXML formats may display layout differences or data loss when edited.
 
-## User feedback and support
+## Project information
 
-In case of technical problems, the best way to get help is to submit your issues [here](https://github.com/ONLYOFFICE/onlyoffice-box/issues). 
-Alternatively, you can contact ONLYOFFICE team on [forum.onlyoffice.com](https://forum.onlyoffice.com/).
+**Official project page:** [onlyoffice.com](https://www.onlyoffice.com/office-for-box)
+
+**Source code:** [Repository](https://github.com/ONLYOFFICE/onlyoffice-box)
+
+**Box App Center:** [ONLYOFFICE Docs](https://app.box.com/integrations/onlyoffice_personal/i)
+
+## 💬 User Feedback & Support
+
+We welcome community participation, technical insights, and feedback. For questions, issues, or troubleshooting, visit:
+
+- **Report issues:** [GitHub Issues](https://github.com/ONLYOFFICE/onlyoffice-box/issues)
+- **Community forum:** [ONLYOFFICE Community](https://community.onlyoffice.com/)
+- **Feedback platform:** [Share ideas](https://feedback.onlyoffice.com/forums/966080-your-voice-matters)
+- **Help for developers:** [API documentation](https://api.onlyoffice.com)
+
+---
