@@ -413,7 +413,10 @@ func (c FileController) convertFile(
 	}
 
 	req.Header.Set("Accept", "application/json")
-	resp, err := otelhttp.DefaultClient.Do(req)
+	otelClient := &http.Client{
+		Transport: otelhttp.NewTransport(http.DefaultTransport),
+	}
+	resp, err := otelClient.Do(req)
 	if err != nil {
 		c.logger.Errorf("could not send a conversion api request: %s", err.Error())
 		return body, err

@@ -74,15 +74,16 @@ type boxAPIClient struct {
 }
 
 func NewBoxAPIClient(cache cache.Cache) BoxAPI {
-	otelClient := otelhttp.DefaultClient
-	otelClient.Transport = otelhttp.NewTransport(&http.Transport{
-		Proxy:                 http.ProxyFromEnvironment,
-		MaxIdleConns:          100,
-		IdleConnTimeout:       90 * time.Second,
-		TLSHandshakeTimeout:   15 * time.Second,
-		ResponseHeaderTimeout: 8 * time.Second,
-		ExpectContinueTimeout: 4 * time.Second,
-	})
+	otelClient := &http.Client{
+		Transport: otelhttp.NewTransport(&http.Transport{
+			Proxy:                 http.ProxyFromEnvironment,
+			MaxIdleConns:          100,
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   15 * time.Second,
+			ResponseHeaderTimeout: 8 * time.Second,
+			ExpectContinueTimeout: 4 * time.Second,
+		}),
+	}
 
 	return &boxAPIClient{
 		client: resty.NewWithClient(otelClient).
