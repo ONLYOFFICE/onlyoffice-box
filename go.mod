@@ -106,7 +106,7 @@ require (
 	github.com/go-chi/cors v1.2.2 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.8.0 // indirect
-	github.com/go-git/go-git/v5 v5.17.0 // indirect
+	github.com/go-git/go-git/v5 v5.18.0 // indirect
 	github.com/go-micro/plugins/v4/broker/memory v1.2.0 // indirect
 	github.com/go-micro/plugins/v4/broker/nats v1.2.0 // indirect
 	github.com/go-micro/plugins/v4/broker/rabbitmq v1.3.0 // indirect
