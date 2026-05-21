@@ -51,7 +51,6 @@ We welcome community participation, technical insights, and feedback. For questi
 
 - **Report issues:** [GitHub Issues](https://github.com/ONLYOFFICE/onlyoffice-box/issues)
 - **Community forum:** [ONLYOFFICE Community](https://community.onlyoffice.com/)
-- **Feedback platform:** [Share ideas](https://feedback.onlyoffice.com/forums/966080-your-voice-matters)
 - **Help for developers:** [API documentation](https://api.onlyoffice.com)
 
 ---
