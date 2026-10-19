@@ -34,7 +34,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/sessions"
 	cv "github.com/nirasan/go-oauth-pkce-code-verifier"
-	"go-micro.dev/v4/client"
+	"go-micro.dev/v5/client"
 	"golang.org/x/oauth2"
 )
 

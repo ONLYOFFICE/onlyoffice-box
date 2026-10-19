@@ -36,8 +36,7 @@ import (
 	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/config"
 	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/crypto"
 	plog "github.com/ONLYOFFICE/onlyoffice-integration-adapters/log"
-	"go-micro.dev/v4/client"
-	"go-micro.dev/v4/util/backoff"
+	"go-micro.dev/v5/client"
 )
 
 var ErrInvalidContentLength = errors.New("content length exceeds the limit")
@@ -122,11 +121,7 @@ func (c *CallbackController) fetchUser(ctx context.Context, user string, userCha
 	req := c.client.NewRequest(fmt.Sprintf("%s:auth", c.server.Namespace), "UserSelectHandler.GetUser", user)
 	var ures response.UserResponse
 
-	err := c.client.Call(ctx, req, &ures, client.WithRetries(3), client.WithBackoff(func(
-		ctx context.Context, req client.Request, attempts int,
-	) (time.Duration, error) {
-		return backoff.Do(attempts), nil
-	}))
+	err := c.client.Call(ctx, req, &ures, client.WithRetries(3), client.WithBackoff(client.DefaultBackoff))
 
 	if err != nil {
 		c.logger.Errorf("failed to fetch user credentials: %v", err)
