@@ -182,7 +182,6 @@ func (c ConfigHandler) processConfig(
 				Goback: response.Goback{
 					RequestClose: false,
 				},
-				Plugins:       false,
 				HideRightMenu: false,
 			},
 			Lang: usr.Language,
