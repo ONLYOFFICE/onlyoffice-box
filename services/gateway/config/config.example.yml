@@ -49,3 +49,6 @@ onlyoffice:
     document_server_header: ""
     gateway_url: ""
     callback_url: ""
+mcp:
+  key_secret: ""
+  previous_key_secret: ""

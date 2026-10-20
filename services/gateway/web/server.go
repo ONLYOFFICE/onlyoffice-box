@@ -22,6 +22,8 @@ import (
 	"net/http"
 
 	"github.com/ONLYOFFICE/onlyoffice-box/services/gateway/web/controller"
+	"github.com/ONLYOFFICE/onlyoffice-box/services/gateway/web/embeddable"
+	"github.com/ONLYOFFICE/onlyoffice-box/services/gateway/web/mcp"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/gateway/web/middleware"
 	shttp "github.com/ONLYOFFICE/onlyoffice-integration-adapters/service/http"
 	"github.com/go-chi/chi/v5"
@@ -37,8 +39,11 @@ type BoxHTTPService struct {
 	editorController  controller.EditorController
 	fileController    controller.FileController
 	shareController   controller.ShareController
+	mcpController     controller.MCPController
+	mcpHandler        mcp.Handler
 	sessionMiddleware middleware.SessionMiddleware
 	desktopMiddleware middleware.DesktopMiddleware
+	mcpMiddleware     middleware.MCPMiddleware
 	csrfMiddleware    func(http.Handler) http.Handler
 }
 
@@ -49,8 +54,11 @@ func NewServer(
 	editorController controller.EditorController,
 	fileController controller.FileController,
 	shareController controller.ShareController,
+	mcpController controller.MCPController,
+	mcpHandler mcp.Handler,
 	sessionMiddleware middleware.SessionMiddleware,
 	desktopMiddleware middleware.DesktopMiddleware,
+	mcpMiddleware middleware.MCPMiddleware,
 	credentials *oauth2.Config,
 ) shttp.ServerEngine {
 	service := BoxHTTPService{
@@ -60,8 +68,11 @@ func NewServer(
 		editorController:  editorController,
 		fileController:    fileController,
 		shareController:   shareController,
+		mcpController:     mcpController,
+		mcpHandler:        mcpHandler,
 		sessionMiddleware: sessionMiddleware,
 		desktopMiddleware: desktopMiddleware,
+		mcpMiddleware:     mcpMiddleware,
 		csrfMiddleware: csrf.Protect(
 			[]byte(credentials.ClientSecret),
 			csrf.HttpOnly(true),
@@ -100,6 +111,8 @@ func (s *BoxHTTPService) InitializeRoutes() {
 
 		r.Handle("/static/*", http.StripPrefix("/static/", fs))
 
+		r.Handle("/mcp", s.mcpMiddleware.Authenticate(s.mcpHandler))
+
 		r.Route("/api", func(cr chi.Router) {
 			cr.Use(s.sessionMiddleware.Protect, sizeMiddleware, s.csrfMiddleware)
 			cr.Get("/users/invitations", s.shareController.BuildGetInvitations())
@@ -111,11 +124,13 @@ func (s *BoxHTTPService) InitializeRoutes() {
 			cr.Handle("/", s.desktopController.BuildEntryPage())
 		})
 
-		r.Route("/", func(cr chi.Router) {
+		r.Group(func(cr chi.Router) {
 			cr.Use(s.sessionMiddleware.Protect, sizeMiddleware, s.csrfMiddleware)
 			cr.Get("/editor", s.editorController.BuildGetEditor())
 			cr.Get("/convert", s.fileController.BuildConvertPage())
 			cr.Post("/convert", s.fileController.BuildConvertFile())
+			cr.Get("/mcp/key", s.mcpController.BuildGetKey())
+			cr.Post("/mcp/key/revoke", s.mcpController.BuildRevokeKey())
 		})
 
 		r.Route("/oauth", func(cr chi.Router) {
@@ -124,7 +139,14 @@ func (s *BoxHTTPService) InitializeRoutes() {
 		})
 
 		r.NotFound(func(rw http.ResponseWriter, r *http.Request) {
-			http.Redirect(rw, r, "/oauth/install", http.StatusMovedPermanently)
+			if r.URL.Path == "/" {
+				http.Redirect(rw, r, "/oauth/install", http.StatusMovedPermanently)
+				return
+			}
+
+			rw.Header().Set("Content-Type", "text/html; charset=utf-8")
+			rw.WriteHeader(http.StatusNotFound)
+			_ = embeddable.NotFoundPage.Execute(rw, nil)
 		})
 	})
 }

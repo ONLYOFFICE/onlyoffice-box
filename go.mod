@@ -4,6 +4,7 @@ go 1.25.8
 
 require (
 	github.com/ONLYOFFICE/onlyoffice-integration-adapters v0.1.52
+	github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5
 	github.com/gorilla/securecookie v1.1.2
 	github.com/stretchr/testify v1.11.1
 	go.mongodb.org/mongo-driver v1.17.9
@@ -11,7 +12,6 @@ require (
 
 require (
 	dario.cat/mergo v1.0.2 // indirect
-	github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5 // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
 	github.com/benbjohnson/clock v1.3.5 // indirect
 	github.com/cloudflare/circl v1.6.3 // indirect
@@ -151,7 +151,7 @@ require (
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sergi/go-diff v1.4.0 // indirect
 	github.com/sethvargo/go-envconfig v1.3.0
-	github.com/sethvargo/go-limiter v1.1.0 // indirect
+	github.com/sethvargo/go-limiter v1.1.0
 	github.com/sirupsen/logrus v1.9.4 // indirect
 	github.com/urfave/cli/v2 v2.27.7
 	github.com/xanzy/ssh-agent v0.3.3 // indirect

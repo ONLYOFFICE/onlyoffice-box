@@ -49,7 +49,8 @@ func Server() *cli.Command {
 			app := pkg.NewBootstrapper(CONFIG_PATH, pkg.WithModules(
 				adapter.BuildNewUserAdapter, shared.BuildNewIntegrationCredentialsConfig(CONFIG_PATH),
 				service.NewUserService, handler.NewUserSelectHandler, handler.NewUserDeleteHandler,
-				handler.NewUserInsertHandler, rpc.NewService, web.NewAuthRPCServer,
+				handler.NewUserInsertHandler, handler.NewUserKeyHandler,
+				rpc.NewService, web.NewAuthRPCServer,
 				shared.NewBoxAPIClient,
 			)).Bootstrap()
 

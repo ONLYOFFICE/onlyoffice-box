@@ -21,6 +21,7 @@ package cmd
 import (
 	"github.com/ONLYOFFICE/onlyoffice-box/services/gateway/web"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/gateway/web/controller"
+	"github.com/ONLYOFFICE/onlyoffice-box/services/gateway/web/mcp"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/gateway/web/middleware"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared/format"
@@ -53,13 +54,19 @@ func Server() *cli.Command {
 					controller.NewAuthController, controller.NewEditorController,
 					controller.NewFileController, controller.NewShareController,
 					controller.NewDesktopController,
+					controller.NewMCPController,
+					mcp.NewKeyManager,
+					mcp.NewUserStore,
+					mcp.NewHandler,
 					chttp.NewService, web.NewServer,
 					shared.BuildNewIntegrationCredentialsConfig(CONFIG_PATH),
 					shared.NewBoxAPIClient, shared.BuildNewOnlyofficeConfig(CONFIG_PATH),
+					shared.BuildNewMCPConfig(CONFIG_PATH),
 					crypto.NewStateGenerator,
 					middleware.NewSessionStore,
 					middleware.NewSessionMiddleware,
 					middleware.NewDesktopMiddleware,
+					middleware.NewMCPMiddleware,
 					format.NewMapFormatManager,
 				),
 			).Bootstrap()
