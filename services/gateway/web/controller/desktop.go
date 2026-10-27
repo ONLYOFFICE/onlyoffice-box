@@ -128,7 +128,7 @@ func (c *DesktopController) BuildEntryPage() http.HandlerFunc {
 			return
 		}
 
-		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+		ctx, cancel := context.WithTimeout(r.Context(), userCallTimeout)
 		defer cancel()
 
 		var ures response.UserResponse
@@ -204,7 +204,7 @@ func (c *DesktopController) BuildGetToken() http.HandlerFunc {
 			return
 		}
 
-		ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+		ctx, cancel := context.WithTimeout(r.Context(), userCallTimeout)
 		defer cancel()
 
 		var ures response.UserResponse

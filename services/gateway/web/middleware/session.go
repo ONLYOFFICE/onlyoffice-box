@@ -115,8 +115,6 @@ func (m SessionMiddleware) Protect(next http.Handler) http.Handler {
 		if userID == "" {
 			userID = tokenUserID
 		} else if tokenUserID != userID {
-			session.Options.MaxAge = -1
-			session.Save(r, rw)
 			m.saveRedirectURL(rw, r)
 			http.Redirect(rw, r, "/oauth/install", http.StatusMovedPermanently)
 			return

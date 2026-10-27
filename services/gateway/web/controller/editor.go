@@ -24,7 +24,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"time"
 
 	"github.com/ONLYOFFICE/onlyoffice-box/services/gateway/web/embeddable"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared/request"
@@ -94,8 +93,8 @@ func (c EditorController) BuildGetEditor() http.HandlerFunc {
 			return
 		}
 
-		group.Do(fmt.Sprintf("%s:%s", state.UserID, state.FileID), func() (interface{}, error) {
-			tctx, cancel := context.WithTimeout(r.Context(), 8*time.Second)
+		built, err, _ := group.Do(fmt.Sprintf("%s:%s", state.UserID, state.FileID), func() (interface{}, error) {
+			tctx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), userCallTimeout)
 			defer cancel()
 			var config response.BuildConfigResponse
 			if err := c.client.Call(
@@ -113,31 +112,36 @@ func (c EditorController) BuildGetEditor() http.HandlerFunc {
 				&config,
 				client.WithRetries(3),
 			); err != nil {
-				c.renderLocalizedErrorPage(rw, loc, err)
 				return nil, err
 			}
 
-			rw.Header().Set("Content-Type", "text/html")
-			embeddable.EditorPage.Execute(rw, map[string]interface{}{
-				"apijs":   fmt.Sprintf("%s/web-apps/apps/api/documents/api.js?shardkey=%s", config.ServerURL, url.QueryEscape(config.Document.Key)),
-				"CSRF":    csrf.Token(r),
-				"Config":  string(config.ToJSON()),
-				"User":    state.UserID,
-				"File":    state.FileID,
-				"Owner":   config.Owner,
-				"DocType": config.DocumentType,
-				"CancelButton": loc.MustLocalize(&i18n.LocalizeConfig{
-					MessageID: "cancelButton",
-				}),
-				"SuccessfulInvitation": loc.MustLocalize(&i18n.LocalizeConfig{
-					MessageID: "successfulInvitation",
-				}),
-				"FailedInvitation": loc.MustLocalize(&i18n.LocalizeConfig{
-					MessageID: "failedInvitation",
-				}),
-			})
+			return config, nil
+		})
 
-			return nil, nil
+		config, ok := built.(response.BuildConfigResponse)
+		if err != nil || !ok {
+			c.renderLocalizedErrorPage(rw, loc, err)
+			return
+		}
+
+		rw.Header().Set("Content-Type", "text/html")
+		embeddable.EditorPage.Execute(rw, map[string]interface{}{
+			"apijs":   fmt.Sprintf("%s/web-apps/apps/api/documents/api.js?shardkey=%s", config.ServerURL, url.QueryEscape(config.Document.Key)),
+			"CSRF":    csrf.Token(r),
+			"Config":  string(config.ToJSON()),
+			"User":    state.UserID,
+			"File":    state.FileID,
+			"Owner":   config.Owner,
+			"DocType": config.DocumentType,
+			"CancelButton": loc.MustLocalize(&i18n.LocalizeConfig{
+				MessageID: "cancelButton",
+			}),
+			"SuccessfulInvitation": loc.MustLocalize(&i18n.LocalizeConfig{
+				MessageID: "successfulInvitation",
+			}),
+			"FailedInvitation": loc.MustLocalize(&i18n.LocalizeConfig{
+				MessageID: "failedInvitation",
+			}),
 		})
 	}
 }

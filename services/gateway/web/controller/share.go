@@ -23,7 +23,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared/request"
@@ -74,77 +73,76 @@ func (c ShareController) BuildInviteUser() http.HandlerFunc {
 		var body request.InviteUserRequest
 		userID := r.URL.Query().Get("user")
 
-		status, _, _ := group.Do(fmt.Sprintf("invite:%s", userID), func() (interface{}, error) {
-			ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
-			defer cancel()
+		ctx, cancel := context.WithTimeout(r.Context(), userCallTimeout)
+		defer cancel()
 
-			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-				c.logger.Errorf("could not unmarshal request body: %s", err.Error())
-				rw.WriteHeader(http.StatusBadRequest)
-				return http.StatusBadRequest, nil
-			}
-
-			if len(body.Users) > 10 {
-				return http.StatusRequestEntityTooLarge, nil
-			}
-
-			user, err := c.getUserAccessToken(ctx, userID)
-			if err != nil {
-				c.logger.Errorf("could not get current user: %s", err.Error())
-				return http.StatusBadRequest, nil
-			}
-
-			if info, err := c.boxClient.GetFileInfo(ctx, user.AccessToken, body.FileID); err != nil || info.CreatedBy.ID != userID {
-				return http.StatusForbidden, nil
-			}
-
-			for _, usr := range body.Users {
-				role := shared.Viewer
-				if usr.Editor {
-					role = shared.Editor
-				}
-
-				if err := c.boxClient.InviteUser(ctx, user.AccessToken, body.FileID, usr.Email, role); err != nil {
-					c.logger.Warnf("could not invite a new user %s to the file %s: %s", usr.Email, body.FileID, err.Error())
-				}
-			}
-
-			return http.StatusCreated, nil
-		})
-
-		if code, ok := status.(int); ok {
-			rw.WriteHeader(code)
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			c.logger.Errorf("could not unmarshal request body: %s", err.Error())
+			rw.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
-		rw.WriteHeader(http.StatusInternalServerError)
+		if len(body.Users) > 10 {
+			rw.WriteHeader(http.StatusRequestEntityTooLarge)
+			return
+		}
+
+		user, err := c.getUserAccessToken(ctx, userID)
+		if err != nil {
+			c.logger.Errorf("could not get current user: %s", err.Error())
+			rw.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		if info, err := c.boxClient.GetFileInfo(ctx, user.AccessToken, body.FileID); err != nil || info.CreatedBy.ID != userID {
+			rw.WriteHeader(http.StatusForbidden)
+			return
+		}
+
+		for _, usr := range body.Users {
+			role := shared.Viewer
+			if usr.Editor {
+				role = shared.Editor
+			}
+
+			if err := c.boxClient.InviteUser(ctx, user.AccessToken, body.FileID, usr.Email, role); err != nil {
+				c.logger.Warnf("could not invite a new user %s to the file %s: %s", usr.Email, body.FileID, err.Error())
+			}
+		}
+
+		rw.WriteHeader(http.StatusCreated)
 	}
 }
 
 func (c ShareController) BuildGetInvitations() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		userID, fileID := r.URL.Query().Get("user"), r.URL.Query().Get("file")
-		group.Do(fmt.Sprintf("invitations:%s:%s", userID, fileID), func() (interface{}, error) {
-			ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
+		collaborations, err, _ := group.Do(fmt.Sprintf("invitations:%s:%s", userID, fileID), func() (interface{}, error) {
+			ctx, cancel := context.WithTimeout(context.WithoutCancel(r.Context()), userCallTimeout)
 			defer cancel()
 
 			user, err := c.getUserAccessToken(ctx, userID)
 			if err != nil {
 				c.logger.Errorf("could not get current user: %s", err.Error())
-				rw.WriteHeader(http.StatusBadRequest)
-				return nil, nil
+				return nil, err
 			}
 
 			collaborations, err := c.boxClient.GetInvitations(ctx, user.AccessToken, fileID)
 			if err != nil {
 				c.logger.Errorf("could not get file collaborations: %s", err.Error())
-				rw.WriteHeader(http.StatusBadRequest)
-				return nil, nil
+				return nil, err
 			}
 
-			rw.Header().Set("Content-Type", "application/json")
-			rw.Write(collaborations.ToJSON())
-			return nil, nil
+			return collaborations.ToJSON(), nil
 		})
+
+		buf, ok := collaborations.([]byte)
+		if err != nil || !ok {
+			rw.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		rw.Header().Set("Content-Type", "application/json")
+		rw.Write(buf)
 	}
 }

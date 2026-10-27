@@ -163,6 +163,15 @@ func (c ConfigHandler) processConfig(
 	}
 
 	filename := c.formatManager.EscapeFileName(file.Name)
+	callbackState, err := c.jwtManager.Sign(
+		c.onlyoffice.Onlyoffice.Builder.DocumentServerSecret,
+		request.CallbackState{FileID: file.ID, Name: file.Name},
+	)
+
+	if err != nil {
+		return config, err
+	}
+
 	config = response.BuildConfigResponse{
 		Document: response.Document{
 			Key:   string(c.hasher.Hash(file.ModifiedAt + file.ID)),
@@ -175,8 +184,8 @@ func (c ConfigHandler) processConfig(
 				Name: usr.Name,
 			},
 			CallbackURL: fmt.Sprintf(
-				"%s/callback?id=%s&name=%s",
-				c.onlyoffice.Onlyoffice.Builder.CallbackURL, file.ID, file.Name,
+				"%s/callback?state=%s",
+				c.onlyoffice.Onlyoffice.Builder.CallbackURL, callbackState,
 			),
 			Customization: response.Customization{
 				Goback: response.Goback{

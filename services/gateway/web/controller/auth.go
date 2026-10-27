@@ -167,7 +167,7 @@ func (c AuthController) BuildGetAuth() http.HandlerFunc {
 
 func (c AuthController) BuildGetRedirect() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), userCallTimeout)
 		defer cancel()
 
 		rw.Header().Set("Content-Type", "text/html")

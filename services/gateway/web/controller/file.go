@@ -72,6 +72,11 @@ type FileController struct {
 	logger        log.Logger
 }
 
+type conversionAnswer struct {
+	status   int
+	location string
+}
+
 func NewFileController(
 	client client.Client, boxClient shared.BoxAPI, jwtManager crypto.JwtManager,
 	credentials *oauth2.Config, formatManager format.FormatManager, hasher crypto.Hasher,
@@ -260,52 +265,49 @@ func (c FileController) BuildConvertFile() http.HandlerFunc {
 			return
 		}
 
-		group.Do(fmt.Sprintf("%s:%s", body.UserID, body.FileID), func() (interface{}, error) {
-			switch body.Action {
-			case "create":
-				nbody, err := c.convertFile(r.Context(), body)
-				if err != nil {
-					if errors.Is(errConversionAutoFormatError, err) {
-						rw.WriteHeader(http.StatusBadRequest)
-						return nil, err
-					}
-
-					if errors.Is(errConversionPasswordRequiredError, err) {
-						rw.WriteHeader(http.StatusLocked)
-						return nil, err
-					}
-
-					rw.WriteHeader(http.StatusInternalServerError)
-					return nil, err
-				}
-				http.Redirect(
-					rw, r,
-					fmt.Sprintf("/editor?state=%s&user=%s", url.QueryEscape(string(nbody.ToJSON())), nbody.UserID),
-					http.StatusMovedPermanently,
-				)
-				return nil, nil
-			case "edit":
-				body.ForceEdit = true
-				http.Redirect(
-					rw, r,
-					fmt.Sprintf("/editor?state=%s&user=%s", url.QueryEscape(string(body.ToJSON())), body.UserID),
-					http.StatusMovedPermanently,
-				)
-				return nil, nil
-			case "view":
-				http.Redirect(
-					rw, r,
-					fmt.Sprintf(
-						"/editor?state=%s&user=%s", url.QueryEscape(string(body.ToJSON())), body.UserID,
-					),
-					http.StatusMovedPermanently,
-				)
-				return nil, nil
-			default:
-				http.Redirect(rw, r, "https://app.box.com", http.StatusMovedPermanently)
-				return nil, nil
-			}
+		answer, _, _ := group.Do(fmt.Sprintf("%s:%s", body.UserID, body.FileID), func() (interface{}, error) {
+			return c.answerConversion(r.Context(), body), nil
 		})
+
+		res, ok := answer.(conversionAnswer)
+		if !ok {
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		if res.location == "" {
+			rw.WriteHeader(res.status)
+			return
+		}
+
+		http.Redirect(rw, r, res.location, http.StatusMovedPermanently)
+	}
+}
+
+func editorLocation(body request.ConvertRequestBody) string {
+	return fmt.Sprintf("/editor?state=%s&user=%s", url.QueryEscape(string(body.ToJSON())), body.UserID)
+}
+
+func (c FileController) answerConversion(ctx context.Context, body request.ConvertRequestBody) conversionAnswer {
+	switch body.Action {
+	case "create":
+		nbody, err := c.convertFile(context.WithoutCancel(ctx), body)
+		switch {
+		case errors.Is(errConversionAutoFormatError, err):
+			return conversionAnswer{status: http.StatusBadRequest}
+		case errors.Is(errConversionPasswordRequiredError, err):
+			return conversionAnswer{status: http.StatusLocked}
+		case err != nil:
+			return conversionAnswer{status: http.StatusInternalServerError}
+		}
+		return conversionAnswer{location: editorLocation(nbody)}
+	case "edit":
+		body.ForceEdit = true
+		return conversionAnswer{location: editorLocation(body)}
+	case "view":
+		return conversionAnswer{location: editorLocation(body)}
+	default:
+		return conversionAnswer{location: "https://app.box.com"}
 	}
 }
 

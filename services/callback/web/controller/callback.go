@@ -70,7 +70,12 @@ func NewCallbackController(
 }
 
 func (c *CallbackController) validateFileSize(ctx context.Context, limit int64, url string) error {
-	resp, err := http.Head(url)
+	req, err := http.NewRequestWithContext(ctx, http.MethodHead, url, nil)
+	if err != nil {
+		return fmt.Errorf("failed to build a file metadata request: %w", err)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to fetch file metadata: %w", err)
 	}
@@ -101,7 +106,7 @@ func (c *CallbackController) uploadFile(user, url, fileID, filename string) erro
 	wg.Add(2)
 
 	go c.fetchUser(ctx, user, userChan, errChan, &wg)
-	go c.fetchFile(url, fileChan, errChan, &wg)
+	go c.fetchFile(ctx, url, fileChan, errChan, &wg)
 
 	wg.Wait()
 	close(errChan)
@@ -137,9 +142,16 @@ func (c *CallbackController) fetchUser(ctx context.Context, user string, userCha
 	userChan <- ures
 }
 
-func (c *CallbackController) fetchFile(url string, fileChan chan<- io.ReadCloser, errChan chan<- error, wg *sync.WaitGroup) {
+func (c *CallbackController) fetchFile(ctx context.Context, url string, fileChan chan<- io.ReadCloser, errChan chan<- error, wg *sync.WaitGroup) {
 	defer wg.Done()
-	resp, err := http.Get(url)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		c.logger.Errorf("failed to build a file download: %v", err)
+		errChan <- err
+		return
+	}
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		c.logger.Errorf("failed to download file: %v", err)
 		errChan <- err
@@ -158,8 +170,15 @@ func (c *CallbackController) BuildPostHandleCallback() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		rw.Header().Set("Content-Type", "application/json")
 
-		fileID := strings.TrimSpace(r.URL.Query().Get("id"))
-		name := strings.TrimSpace(r.URL.Query().Get("name"))
+		var state request.CallbackState
+		if err := c.jwtManager.Verify(
+			c.onlyoffice.Onlyoffice.Builder.DocumentServerSecret, r.URL.Query().Get("state"), &state,
+		); err != nil {
+			c.handleError(rw, http.StatusForbidden, "invalid callback state", err)
+			return
+		}
+
+		fileID, name := strings.TrimSpace(state.FileID), strings.TrimSpace(state.Name)
 		if fileID == "" || name == "" {
 			c.handleError(rw, http.StatusBadRequest, "missing file id or name", nil)
 			return

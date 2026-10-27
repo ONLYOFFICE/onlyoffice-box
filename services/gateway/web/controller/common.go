@@ -21,6 +21,7 @@ package controller
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/ONLYOFFICE/onlyoffice-box/services/gateway/web/middleware"
 	"golang.org/x/sync/singleflight"
@@ -29,6 +30,8 @@ import (
 var (
 	group singleflight.Group
 )
+
+const userCallTimeout = 15 * time.Second
 
 var (
 	ErrSemaphoreNotAllowed = errors.New("could not acquire semaphore")

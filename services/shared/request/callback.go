@@ -22,7 +22,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+
+	"github.com/golang-jwt/jwt/v5"
 )
+
+type CallbackState struct {
+	jwt.RegisteredClaims
+	FileID string `json:"file_id" mapstructure:"file_id"`
+	Name   string `json:"name" mapstructure:"name"`
+}
 
 type MissingRequestFieldsError struct {
 	Request string
