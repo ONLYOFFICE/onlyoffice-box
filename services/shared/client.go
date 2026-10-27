@@ -21,10 +21,8 @@ package shared
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared/request"
@@ -68,26 +66,10 @@ type BoxAPI interface {
 	UploadFile(ctx context.Context, filename, token, fileID string, file io.ReadCloser) error
 	CreateFile(ctx context.Context, filename, folderID, token string, file io.ReadCloser) (response.BoxCreateFileResponse, error)
 	UpdateModifiedAt(ctx context.Context, token, fileID string) error
-	GetFileMetadata(ctx context.Context, token, fileID string) (response.BoxItemResponse, error)
-}
-
-type BoxAPIError struct {
-	Status     int
-	Code       string
-	RetryAfter time.Duration
-}
-
-func (e *BoxAPIError) Error() string {
-	if e.Code == "" {
-		return fmt.Sprintf("box request failed with status %d", e.Status)
-	}
-
-	return fmt.Sprintf("box request failed with status %d: %s", e.Status, e.Code)
 }
 
 type boxAPIClient struct {
 	client *resty.Client
-	direct *resty.Client
 	cache  cache.Cache
 }
 
@@ -116,12 +98,6 @@ func NewBoxAPIClient(cache cache.Cache) BoxAPI {
 			AddRetryCondition(func(r *resty.Response, err error) bool {
 				return r.StatusCode() == http.StatusTooManyRequests
 			}),
-		direct: resty.NewWithClient(otelClient).
-			SetRedirectPolicy(resty.RedirectPolicyFunc(func(req *http.Request, via []*http.Request) error {
-				return http.ErrUseLastResponse
-			})).
-			SetTimeout(10 * time.Second).
-			SetLogger(log.NewEmptyLogger()),
 		cache: cache,
 	}
 }
@@ -377,42 +353,4 @@ func (c *boxAPIClient) invalidateCacheEntries(token, id string) {
 	defer cancel()
 	c.cache.Delete(ctx, _FileInfoKey+token+_PartSeparator+id)
 	c.cache.Delete(ctx, _FilePublicUrlKey+token+_PartSeparator+id)
-}
-
-func (c *boxAPIClient) GetFileMetadata(ctx context.Context, token, fileID string) (response.BoxItemResponse, error) {
-	var item response.BoxItemResponse
-	resp, err := c.direct.R().
-		SetContext(ctx).
-		SetAuthToken(token).
-		SetResult(&item).
-		SetError(&response.BoxErrorResponse{}).
-		SetQueryParams(map[string]string{
-			"fields": "type,id,name,extension,size,modified_at",
-		}).
-		SetPathParams(map[string]string{
-			"fileID": fileID,
-		}).
-		Get("https://api.box.com/2.0/files/{fileID}")
-	if err != nil {
-		return item, err
-	}
-
-	if resp.IsError() {
-		apiErr := &BoxAPIError{Status: resp.StatusCode()}
-		if res, ok := resp.Error().(*response.BoxErrorResponse); ok {
-			apiErr.Code = res.Code
-		}
-
-		if seconds, err := strconv.Atoi(resp.Header().Get("Retry-After")); err == nil && seconds > 0 {
-			apiErr.RetryAfter = time.Duration(seconds) * time.Second
-		}
-
-		return item, apiErr
-	}
-
-	if item.ID == "" {
-		return item, ErrEmptyResponse
-	}
-
-	return item, nil
 }

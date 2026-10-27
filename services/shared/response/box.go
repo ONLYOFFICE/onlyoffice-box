@@ -130,17 +130,3 @@ func (v BoxPermissions) ToJSON() []byte {
 	buf, _ := json.Marshal(v)
 	return buf
 }
-
-type BoxItemResponse struct {
-	Type       string `json:"type"`
-	ID         string `json:"id"`
-	Name       string `json:"name"`
-	Extension  string `json:"extension"`
-	Size       int64  `json:"size"`
-	ModifiedAt string `json:"modified_at"`
-}
-
-type BoxErrorResponse struct {
-	Code    string `json:"code"`
-	Message string `json:"message"`
-}
