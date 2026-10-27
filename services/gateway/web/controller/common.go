@@ -20,7 +20,9 @@ package controller
 
 import (
 	"errors"
+	"net/http"
 
+	"github.com/ONLYOFFICE/onlyoffice-box/services/gateway/web/middleware"
 	"golang.org/x/sync/singleflight"
 )
 
@@ -30,4 +32,14 @@ var (
 
 var (
 	ErrSemaphoreNotAllowed = errors.New("could not acquire semaphore")
+	errForeignUser         = errors.New("the request names a user other than the signed-in one")
 )
+
+// actsAsSessionUser tells whether the user id a request names (in an editor
+// state or a convert body) is the one its session signed in. The session
+// middleware checks only the `user` query parameter, and the user id named
+// here picks whose Box token the editor and the conversion use.
+func actsAsSessionUser(r *http.Request, userID string) bool {
+	sessionUser, _ := r.Context().Value(middleware.UserIDKey).(string)
+	return sessionUser != "" && userID == sessionUser
+}

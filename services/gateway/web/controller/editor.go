@@ -87,6 +87,13 @@ func (c EditorController) BuildGetEditor() http.HandlerFunc {
 			return
 		}
 
+		if !actsAsSessionUser(r, state.UserID) {
+			rw.Header().Set("Content-Type", "text/html")
+			rw.WriteHeader(http.StatusForbidden)
+			c.renderLocalizedErrorPage(rw, loc, errForeignUser)
+			return
+		}
+
 		group.Do(fmt.Sprintf("%s:%s", state.UserID, state.FileID), func() (interface{}, error) {
 			tctx, cancel := context.WithTimeout(r.Context(), 8*time.Second)
 			defer cancel()

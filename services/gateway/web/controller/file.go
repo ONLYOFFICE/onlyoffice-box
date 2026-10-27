@@ -254,6 +254,12 @@ func (c FileController) BuildConvertFile() http.HandlerFunc {
 			return
 		}
 
+		if !actsAsSessionUser(r, body.UserID) {
+			c.logger.Warnf("refused a conversion: %s", errForeignUser.Error())
+			rw.WriteHeader(http.StatusForbidden)
+			return
+		}
+
 		group.Do(fmt.Sprintf("%s:%s", body.UserID, body.FileID), func() (interface{}, error) {
 			switch body.Action {
 			case "create":
