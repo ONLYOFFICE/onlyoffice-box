@@ -72,10 +72,6 @@ func (m mockAdapter) DeleteUserByID(ctx context.Context, uid string) error {
 	return nil
 }
 
-func (m mockAdapter) IncrementKeyVersion(ctx context.Context, uid string) (int, error) {
-	return 1, nil
-}
-
 func TestUserService(t *testing.T) {
 	service := NewUserService(mockAdapter{}, mockEncryptor{}, cache.NewCache(&config.CacheConfig{}),
 		&oauth2.Config{ClientSecret: "mock"}, log.NewEmptyLogger())

@@ -21,7 +21,6 @@ package adapter
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log"
 	"strings"
 	"time"
@@ -44,7 +43,6 @@ type userAccessCollection struct {
 	RefreshToken     string `json:"refresh_token"`
 	TokenType        string `json:"token_type"`
 	ExpiresAt        int64  `json:"expires_at"`
-	KeyVersion       int    `json:"key_version" bson:"key_version"`
 }
 
 type mongoUserAdapter struct {
@@ -111,22 +109,13 @@ func (m *mongoUserAdapter) SelectUserByID(ctx context.Context, uid string) (doma
 
 	user := &userAccessCollection{}
 	collection := mgm.Coll(user)
-	if err := collection.FirstWithCtx(ctx, bson.M{"uid": uid}, user); err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return domain.UserAccess{}, fmt.Errorf("could not find a mongo user: %w", domain.ErrUserNotFound)
-		}
-
-		return domain.UserAccess{}, err
-	}
-
 	return domain.UserAccess{
 		ID:           user.UID,
 		AccessToken:  user.AccessToken,
 		RefreshToken: user.RefreshToken,
 		TokenType:    user.TokenType,
 		ExpiresAt:    user.ExpiresAt,
-		KeyVersion:   user.KeyVersion,
-	}, nil
+	}, collection.FirstWithCtx(ctx, bson.M{"uid": uid}, user)
 }
 
 func (m *mongoUserAdapter) UpsertUser(ctx context.Context, user domain.UserAccess) (domain.UserAccess, error) {
@@ -135,29 +124,6 @@ func (m *mongoUserAdapter) UpsertUser(ctx context.Context, user domain.UserAcces
 	}
 
 	return user, m.save(ctx, user)
-}
-
-func (m *mongoUserAdapter) IncrementKeyVersion(ctx context.Context, uid string) (int, error) {
-	uid = strings.TrimSpace(uid)
-	if uid == "" {
-		return 0, errInvalidUserId
-	}
-
-	user := &userAccessCollection{}
-	if err := mgm.Coll(user).FindOneAndUpdate(
-		ctx,
-		bson.M{"uid": uid},
-		bson.M{"$inc": bson.M{"key_version": 1}},
-		options.FindOneAndUpdate().SetReturnDocument(options.After),
-	).Decode(user); err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return 0, fmt.Errorf("could not increment mongo user key version: %w", domain.ErrUserNotFound)
-		}
-
-		return 0, fmt.Errorf("could not increment mongo user key version: %w", err)
-	}
-
-	return user.KeyVersion, nil
 }
 
 func (m *mongoUserAdapter) DeleteUserByID(ctx context.Context, uid string) error {

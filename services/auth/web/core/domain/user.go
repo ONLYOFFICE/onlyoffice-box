@@ -29,7 +29,6 @@ type UserAccess struct {
 	RefreshToken string `json:"refresh_token" mapstructure:"refresh_token"`
 	TokenType    string `json:"token_type" mapstructure:"token_type"`
 	ExpiresAt    int64  `json:"expires_at" mapstructure:"expires_at"`
-	KeyVersion   int    `json:"key_version" mapstructure:"key_version"`
 }
 
 func (u UserAccess) ToJSON() []byte {

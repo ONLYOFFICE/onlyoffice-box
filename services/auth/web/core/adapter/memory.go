@@ -21,7 +21,7 @@ package adapter
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"errors"
 
 	"github.com/ONLYOFFICE/onlyoffice-box/services/auth/web/core/domain"
 	"github.com/ONLYOFFICE/onlyoffice-box/services/auth/web/core/port"
@@ -38,14 +38,6 @@ func NewMemoryUserAdapter() port.UserAccessServiceAdapter {
 }
 
 func (m *memoryUserAdapter) save(user domain.UserAccess) error {
-	if existing, err := m.SelectUserByID(context.Background(), user.ID); err == nil {
-		user.KeyVersion = existing.KeyVersion
-	}
-
-	return m.write(user)
-}
-
-func (m *memoryUserAdapter) write(user domain.UserAccess) error {
 	buffer, err := json.Marshal(user)
 
 	if err != nil {
@@ -66,7 +58,7 @@ func (m *memoryUserAdapter) SelectUserByID(ctx context.Context, uid string) (dom
 	var user domain.UserAccess
 
 	if !ok {
-		return user, fmt.Errorf("user with this id doesn't exist: %w", domain.ErrUserNotFound)
+		return user, errors.New("user with this id doesn't exist")
 	}
 
 	if err := json.Unmarshal(buffer, &user); err != nil {
@@ -84,23 +76,9 @@ func (m *memoryUserAdapter) UpsertUser(ctx context.Context, user domain.UserAcce
 	return user, nil
 }
 
-func (m *memoryUserAdapter) IncrementKeyVersion(ctx context.Context, uid string) (int, error) {
-	user, err := m.SelectUserByID(ctx, uid)
-	if err != nil {
-		return 0, err
-	}
-
-	user.KeyVersion++
-	if err := m.write(user); err != nil {
-		return 0, err
-	}
-
-	return user.KeyVersion, nil
-}
-
 func (m *memoryUserAdapter) DeleteUserByID(ctx context.Context, uid string) error {
 	if _, ok := m.kvs[uid]; !ok {
-		return fmt.Errorf("user with this id doesn't exist: %w", domain.ErrUserNotFound)
+		return errors.New("user with this id doesn't exist")
 	}
 
 	delete(m.kvs, uid)

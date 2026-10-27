@@ -20,7 +20,6 @@ package handler
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -29,7 +28,6 @@ import (
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared"
 	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/log"
 	"go-micro.dev/v4/client"
-	merrors "go-micro.dev/v4/errors"
 	"golang.org/x/oauth2"
 	"golang.org/x/sync/singleflight"
 )
@@ -81,7 +79,6 @@ func (u UserSelectHandler) GetUser(ctx context.Context, uid *string, res *domain
 				RefreshToken: credentials.RefreshToken,
 				TokenType:    credentials.TokenType,
 				ExpiresAt:    time.Now().UnixMilli() + credentials.ExpiresIn*int64(1000),
-				KeyVersion:   user.KeyVersion,
 			})
 		}
 
@@ -91,10 +88,6 @@ func (u UserSelectHandler) GetUser(ctx context.Context, uid *string, res *domain
 	if usr, ok := user.(domain.UserAccess); ok {
 		*res = usr
 		return nil
-	}
-
-	if errors.Is(err, domain.ErrUserNotFound) {
-		return merrors.NotFound("auth", "user %s not found", *uid)
 	}
 
 	return err

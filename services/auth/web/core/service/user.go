@@ -21,7 +21,6 @@ package service
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 	"sync"
 
@@ -173,7 +172,6 @@ func (s userService) GetUser(ctx context.Context, uid string) (domain.UserAccess
 			RefreshToken: <-rtokenChan,
 			TokenType:    user.TokenType,
 			ExpiresAt:    user.ExpiresAt,
-			KeyVersion:   user.KeyVersion,
 		}
 		return u, u.Validate()
 	}
@@ -233,23 +231,6 @@ func (s userService) UpdateUser(ctx context.Context, user domain.UserAccess) (do
 	}
 
 	return user, nil
-}
-
-func (s userService) RotateKey(ctx context.Context, uid string) (int, error) {
-	id := strings.TrimSpace(uid)
-	if id == "" {
-		return 0, &InvalidServiceParameterError{
-			Name:   "UID",
-			Reason: "Should not be blank",
-		}
-	}
-
-	version, err := s.adapter.IncrementKeyVersion(ctx, id)
-	if err != nil {
-		return 0, fmt.Errorf("could not rotate user key: %w", err)
-	}
-
-	return version, nil
 }
 
 func (s userService) DeleteUser(ctx context.Context, uid string) error {
