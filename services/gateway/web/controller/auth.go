@@ -51,6 +51,21 @@ type AuthController struct {
 	session        *sessions.CookieStore
 }
 
+func scopeParam(scopes []string) string {
+	var named []string
+	for _, scope := range scopes {
+		if scope = strings.TrimSpace(scope); scope != "" {
+			named = append(named, scope)
+		}
+	}
+
+	if len(named) == 0 {
+		return ""
+	}
+
+	return "&scope=" + url.QueryEscape(strings.Join(named, " "))
+}
+
 func NewAuthController(
 	client client.Client,
 	boxClient shared.BoxAPI,
@@ -142,8 +157,8 @@ func (c AuthController) BuildGetAuth() http.HandlerFunc {
 		}
 
 		authURL := fmt.Sprintf(
-			"https://account.box.com/api/oauth2/authorize?client_id=%s&response_type=code&state=%s",
-			c.oauth.ClientID, url.QueryEscape(state),
+			"https://account.box.com/api/oauth2/authorize?client_id=%s&response_type=code&state=%s%s",
+			c.oauth.ClientID, url.QueryEscape(state), scopeParam(c.oauth.Scopes),
 		)
 
 		http.Redirect(rw, r, authURL, http.StatusFound)
