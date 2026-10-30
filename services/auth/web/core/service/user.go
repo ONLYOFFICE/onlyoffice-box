@@ -28,7 +28,7 @@ import (
 	"github.com/ONLYOFFICE/onlyoffice-box/services/auth/web/core/port"
 	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/crypto"
 	plog "github.com/ONLYOFFICE/onlyoffice-integration-adapters/log"
-	"go-micro.dev/v4/cache"
+	"go-micro.dev/v5/cache"
 	"golang.org/x/oauth2"
 )
 

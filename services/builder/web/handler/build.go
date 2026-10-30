@@ -36,7 +36,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/mileusna/useragent"
-	"go-micro.dev/v4/client"
+	"go-micro.dev/v5/client"
 	"golang.org/x/sync/singleflight"
 )
 
@@ -256,7 +256,7 @@ func (c ConfigHandler) BuildConfig(
 
 		var ures response.UserResponse
 		if err := c.client.Call(ctx, req, &ures); err != nil {
-			c.logger.Debugf("could not get user %d access info: %s", payload.UserID, err.Error())
+			c.logger.Debugf("could not get user %s access info: %s", payload.UserID, err.Error())
 			return nil, err
 		}
 

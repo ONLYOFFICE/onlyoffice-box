@@ -30,7 +30,7 @@ import (
 	"github.com/ONLYOFFICE/onlyoffice-box/services/shared/response"
 	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/config"
 	"github.com/ONLYOFFICE/onlyoffice-integration-adapters/log"
-	"go-micro.dev/v4/client"
+	"go-micro.dev/v5/client"
 )
 
 type ShareController struct {
